@@ -1,0 +1,5 @@
+This is a small text chat application written in python3.
+It consists of a server and client script.  It uses the select
+module on sockets which works fine on *NIX like systems but not
+on Windows.  This is unlikely to change because it is a toy program
+and I really dont care if it works on Windows.
