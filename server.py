@@ -8,30 +8,45 @@ import socket
 import sys
 
 
-# Print out proper invocation of program
 def usage():
+    """Print out proper invocation of program."""
     print('usage: {} ipaddress port'.format(sys.argv[0]))
     sys.exit(1)
 
 
 class ChatServer():
     """A simple chatroom server."""
-
     def __init__(self):
-        """Initialize the chat server."""
+        """Initialize the chat server.
 
+        Important variables set:
+            exit_flag: Boolean value, when true the server should exit
+            clients: Dictionary of client connections
+            addresses: Dictionary of address and  port values for connections
+            MAX_QUEUE: Maximum number of queued connectiions to be established
+            HOST: Server's address, should be set at invocation
+            PORT: Server's listening port, should be set at invocation
+            ADDR: Tuple value of (HOST, PORT)
+            BUFSIZ: Buffer size for packets being sent/recieved
+            server: Socket used for communications
+        """
         self.exit_flag = False
         self.clients = {}
         self.addresses = {}
         self.MAX_QUEUE = 5
         self.HOST = sys.argv[1]
+
+        # Set the listening port number
         try:
             self.PORT = int(sys.argv[2])
         except ValueError:
             print('Error: port must be a number.')
             usage()
-        self.BUFSIZ = 4096
+
         self.ADDR = (self.HOST, self.PORT)
+        self.BUFSIZ = 4096
+
+        # Create the server socket
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -46,7 +61,6 @@ class ChatServer():
 
     def run(self):
         """Run the chat server."""
-
         try:
             self.server.listen(self.MAX_QUEUE)
             print('Waiting for connections...')
@@ -60,13 +74,11 @@ class ChatServer():
 
     def accept_connections(self):
         """Accept incoming client connections."""
-
         while not self.exit_flag:
             self.select_loop()
 
     def select_loop(self):
         """Select between reading from server socket and standard input."""
-
         sockets = [sys.stdin, self.server]
         rlist, wlist, xlist = select.select(sockets, [], [], 60)
 
@@ -84,7 +96,6 @@ class ChatServer():
 
     def close_server(self):
         """Shutdown the chat server."""
-
         self.broadcast(bytes('The lair is closed.', 'utf8'))
 
         try:
@@ -96,7 +107,6 @@ class ChatServer():
 
     def who(self):
         """Print a list of all connected clients."""
-
         print('{:*^60}'.format(' The lair dwellers! '))
         for nick, addr in zip(self.clients.values(),
                               self.addresses.values()):
@@ -104,7 +114,6 @@ class ChatServer():
 
     def spawn_client(self):
         """Spawn a new client thread."""
-
         try:
             client, client_address = self.server.accept()
             print('{}:{} has connected.'.format(*client_address))
@@ -120,7 +129,6 @@ class ChatServer():
 
     def handle_client(self, client):
         """Handles a single client connection."""
-
         # Get a unique nickname from the client
         nick = self.get_nick(client)
         self.clients[client] = nick
@@ -141,7 +149,6 @@ class ChatServer():
 
     def get_nick(self, client):
         """Get a unique nickname from the client."""
-
         while True:
             nick = client.recv(self.BUFSIZ).decode('utf8')
             if nick in self.clients.values():
@@ -155,7 +162,6 @@ class ChatServer():
 
     def broadcast(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
-
         for sock in self.clients:
             try:
                 if omit_client and sock != omit_client:
@@ -167,7 +173,6 @@ class ChatServer():
 
     def client_thread_loop(self, client, nick):
         """Send/Receive loop for client thread."""
-
         while True:
             try:
                 msg = client.recv(self.BUFSIZ).decode('utf8')
@@ -185,7 +190,6 @@ class ChatServer():
 
     def remove_client(self, client, nick):
         """Remove a client connection."""
-
         print('{}:{} has disconnected.'.format(*self.addresses[client]))
         del self.addresses[client]
         del self.clients[client]
@@ -194,14 +198,14 @@ class ChatServer():
         client.close()
 
 
-# Main function
 def main():
+    """Main Function."""
     if len(sys.argv) != 3:
         usage()
 
     ChatServer().run()
 
 
-# main? Program entry point
+# __main__? Program entry point
 if __name__ == '__main__':
     sys.exit(main())
