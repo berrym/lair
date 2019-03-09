@@ -164,12 +164,19 @@ class ChatServer():
         """Broadcast a message to clients."""
         for sock in self.clients:
             try:
-                if omit_client and sock != omit_client:
-                    sock.send(bytes(prefix, 'utf8') + msg)
-                elif omit_client is None:
+                if omit_client and sock == omit_client:
+                    pass
+                else:
                     sock.send(bytes(prefix, 'utf8') + msg)
             except socket.error as err:
                 print('Error: {}'.format(err))
+
+    def broadcast_to_client(self, msg, client, prefix=''):
+        """Broadcast a message to a single client."""
+        try:
+            client.send(bytes(prefix, 'utf8') + msg)
+        except socket.error as err:
+            print('Error: {}'.format(err))
 
     def client_thread_loop(self, client, nick):
         """Send/Receive loop for client thread."""
@@ -182,11 +189,13 @@ class ChatServer():
                 print('Error: {}'.format(err))
                 break
 
-            if msg != '{quit}':
-                self.broadcast(bytes(msg, 'utf8'), client, nick + ': ')
-            else:
+            if msg == '{quit}':
                 self.remove_client(client, nick)
                 break
+            elif msg == '{who}':
+                self.tell_who(client)
+            else:
+                self.broadcast(bytes(msg, 'utf8'), client, nick + ': ')
 
     def remove_client(self, client, nick):
         """Remove a client connection."""
@@ -196,6 +205,13 @@ class ChatServer():
         msg = '{} has left the lair.'.format(nick)
         self.broadcast(bytes(msg, 'utf8'), client)
         client.close()
+
+    def tell_who(self, client):
+        """Send a list of connected users to a client."""
+        for nick, addr in zip(self.clients.values(),
+                              self.addresses.values()):
+            msg = '{} at {}:{}\n'.format(nick, *addr)
+            self.broadcast_to_client(bytes(msg, 'utf8'), client)
 
 
 def main():
