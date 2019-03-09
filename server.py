@@ -96,7 +96,7 @@ class ChatServer():
 
     def close_server(self):
         """Shutdown the chat server."""
-        self.broadcast(bytes('The lair is closed.', 'utf8'))
+        self.broadcast_to_all(bytes('The lair is closed.', 'utf8'))
 
         try:
             self.server.close()
@@ -142,7 +142,7 @@ class ChatServer():
 
         # Inform other clients that a new one has connected
         msg = '{} has entered the lair!'.format(nick)
-        self.broadcast(bytes(msg, 'utf8'), client)
+        self.broadcast_to_all(bytes(msg, 'utf8'), client)
 
         # Start sending/recieving messages with client thread
         self.client_thread_loop(client, nick)
@@ -160,7 +160,7 @@ class ChatServer():
             else:
                 return nick
 
-    def broadcast(self, msg, omit_client=None, prefix=''):
+    def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
         for sock in self.clients:
             try:
@@ -195,7 +195,7 @@ class ChatServer():
             elif msg == '{who}':
                 self.tell_who(client)
             else:
-                self.broadcast(bytes(msg, 'utf8'), client, nick + ': ')
+                self.broadcast_to_all(bytes(msg, 'utf8'), client, nick + ': ')
 
     def remove_client(self, client, nick):
         """Remove a client connection."""
@@ -203,14 +203,14 @@ class ChatServer():
         del self.addresses[client]
         del self.clients[client]
         msg = '{} has left the lair.'.format(nick)
-        self.broadcast(bytes(msg, 'utf8'), client)
+        self.broadcast_to_all(bytes(msg, 'utf8'), client)
         client.close()
 
     def tell_who(self, client):
         """Send a list of connected users to a client."""
         for nick, addr in zip(self.clients.values(),
                               self.addresses.values()):
-            msg = '{} at {}:{}\n'.format(nick, *addr)
+            msg = '{} at {}\n'.format(nick, addr[0])
             self.broadcast_to_client(bytes(msg, 'utf8'), client)
 
 
