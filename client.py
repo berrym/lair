@@ -75,6 +75,12 @@ class ChatClient():
                     print('Error: {}'.format(err))
             else:
                 msg = input('')
+                if msg == '{help}':
+                    print('{:*^40}'.format(' Available Commands '))
+                    print('{help}:\tThis help message')
+                    print('{who}:\tA list of connected users')
+                    print('{quit}:\tExit this client session')
+                    continue
                 try:
                     self.server.send(bytes(msg, 'utf8'))
                 except socket.error as err:

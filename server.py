@@ -133,7 +133,7 @@ class ChatServer():
         nick = self.get_nick(client)
         self.clients[client] = nick
 
-        msg = 'Welcome to the lair {}! Type {{quit}} to exit.'.format(nick)
+        msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
         try:
             client.send(bytes(msg, 'utf8'))
         except socket.error as err:
