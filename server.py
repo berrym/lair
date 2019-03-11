@@ -22,7 +22,7 @@ class ChatServer():
         Important variables set:
             exit_flag: Boolean value, when true the server should exit
             clients: Dictionary of client connections
-            addresses: Dictionary of address and  port values for connections
+            addresses: Dictionary of addresses for connections
             MAX_QUEUE: Maximum number of queued connectiions to be established
             HOST: Server's address, should be set at invocation
             PORT: Server's listening port, should be set at invocation
