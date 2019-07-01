@@ -7,6 +7,8 @@ import psutil
 from threading import Thread
 from PyQt5 import QtCore, QtWidgets
 
+addr = '127.0.0.1'
+port = 1234
 tcp_client = None
 exit_flag = False
 
@@ -17,12 +19,46 @@ def kill_proc_tree(pid):
     parent.kill()
 
 
+class ConnectionDialog(QtWidgets.QDialog):
+    """Get Server Options."""
+    def __init__(self):
+        """Create a simple dialog.
+
+        Populate addr and port of server with user input.
+        """
+        super().__init__()
+        self.addressLabel = QtWidgets.QLabel('Server Address', self)
+        self.addressField = QtWidgets.QLineEdit(self)
+        self.portLabel = QtWidgets.QLabel('Server Port', self)
+        self.portField = QtWidgets.QLineEdit(self)
+        self.btnConnect = QtWidgets.QPushButton('Connect', self)
+        self.btnConnect.clicked.connect(self.set_fields)
+        self.vbox = QtWidgets.QVBoxLayout()
+        self.vbox.addWidget(self.addressLabel)
+        self.vbox.addWidget(self.addressField)
+        self.vbox.addWidget(self.portLabel)
+        self.vbox.addWidget(self.portField)
+        self.vbox.addWidget(self.btnConnect)
+        self.setLayout(self.vbox)
+        self.setWindowTitle('Connect to Lair Server')
+        self.resize(250, 250)
+
+    def set_fields(self):
+        """Get user input from the text fields then exit dialog."""
+        global addr
+        global port
+        addr = self.addressField.text()
+        port = int(self.portField.text())
+        self.close()
+
+
 class ChatWindow(QtWidgets.QDialog):
     """Graphical chat window."""
     def __init__(self):
         """Initialize the chat window.
 
-        Create all gui components."""
+        Create all gui components.
+        """
         super().__init__()
         self.chatTextField = QtWidgets.QLineEdit(self)
         self.chatTextField.resize(480, 100)
@@ -89,7 +125,6 @@ class ChatWindow(QtWidgets.QDialog):
                 self.quit()
                 tcp_client.close()
                 kill_proc_tree(os.getpid())
-                sys.exit(1)
 
     def help(self):
         """Print a list of available commands."""
@@ -114,14 +149,14 @@ class ClientThread(Thread):
 
     def run(self):
         """Run the client thread."""
-        host = '10.0.1.80'
-        port = 1234
         BUFSIZ = 4096
 
+        global addr
+        global port
         global tcp_client
         try:
             tcp_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            tcp_client.connect((host, port))
+            tcp_client.connect((addr, port))
         except socket.error as err:
             QtWidgets.QMessageBox.critical(self.window,
                                            'Error',
@@ -149,8 +184,10 @@ class ClientThread(Thread):
 # __main__? Program entry point
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    win = ChatWindow()
-    ct = ClientThread(win)
+    opt_win = ConnectionDialog()
+    opt_win.exec_()
+    main_win = ChatWindow()
+    ct = ClientThread(main_win)
     ct.start()
-    win.exec_()
+    main_win.exec_()
     sys.exit(app.exec_())
