@@ -80,7 +80,7 @@ class ChatServer():
     def select_loop(self):
         """Select between reading from server socket and standard input."""
         sockets = [sys.stdin, self.server]
-        rlist, (), () = select.select(sockets, [], [], 60)
+        rlist, wlist, xlist = select.select(sockets, [], [], 60)
 
         for sock in rlist:
             if sock == sys.stdin:
