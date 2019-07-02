@@ -18,6 +18,8 @@ def kill_proc_tree(pid):
     parent = psutil.Process(pid)
     parent.kill()
 
+def formatText(color='black', text=''):
+    return ('<font color="{}">{}</font>'.format(color, text))
 
 class ConnectionDialog(QtWidgets.QDialog):
     """Get Server Options."""
@@ -136,10 +138,21 @@ class ChatWindow(QtWidgets.QDialog):
 
     def help(self):
         """Print a list of available commands."""
-        self.chat.append('Available Commands:\n')
-        self.chat.append('\t{help}\tThis help menu')
-        self.chat.append('\t{quit}\tExit program')
-        self.chat.append('\t{who}\tList of user names in the lair')
+        self.chat.insertHtml(
+            formatText(color='red',
+                        text='<br><br>Available Commands:<br>'))
+        self.chat.insertHtml(
+            formatText(color='yellow',
+                        text='<pre>    {help}    ' +\
+                            'This help menu</pre><br>'))
+        self.chat.insertHtml(
+            formatText(color='yellow',
+                        text='<pre>    {quit}    ' +\
+                            'Exit program</pre><br>'))
+        self.chat.insertHtml(
+            formatText(color='yellow',
+                        text='<pre>    {who}     ' +\
+                            'Connected users</pre><br>'))
 
 
 class ClientThread(Thread):
