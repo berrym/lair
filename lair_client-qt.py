@@ -29,8 +29,10 @@ class ConnectionDialog(QtWidgets.QDialog):
         super().__init__()
         self.addressLabel = QtWidgets.QLabel('Server Address', self)
         self.addressField = QtWidgets.QLineEdit(self)
+        self.addressField.setText(ADDR)
         self.portLabel = QtWidgets.QLabel('Server Port', self)
         self.portField = QtWidgets.QLineEdit(self)
+        self.portField.setText(str(PORT))
         self.btnConnect = QtWidgets.QPushButton('Connect', self)
         self.btnConnect.clicked.connect(self.set_fields)
         self.vbox = QtWidgets.QVBoxLayout()
@@ -64,7 +66,7 @@ class ChatWindow(QtWidgets.QDialog):
         self.chatTextField.resize(480, 100)
         self.chatTextField.move(10, 350)
 
-        self.btnSend = QtWidgets.QPushButton("Send", self)
+        self.btnSend = QtWidgets.QPushButton('Send', self)
         self.btnSend.resize(480, 30)
         self.btnSendFont = self.btnSend.font()
         self.btnSendFont.setPointSize(12)
@@ -135,9 +137,9 @@ class ChatWindow(QtWidgets.QDialog):
     def help(self):
         """Print a list of available commands."""
         self.chat.append('Available Commands:\n')
-        self.chat.append('\t{help}:\t This help menu')
-        self.chat.append('\t{quit}:\tExit program')
-        self.chat.append('\t{who}\tList of user names in the lair.')
+        self.chat.append('\t{help}\tThis help menu')
+        self.chat.append('\t{quit}\tExit program')
+        self.chat.append('\t{who}\tList of user names in the lair')
 
 
 class ClientThread(Thread):
@@ -174,7 +176,7 @@ class ClientThread(Thread):
             if data == 'The lair is closed.':
                 EXIT_FLAG = True
 
-            # add recieved text to chat field
+            # Add recieved text to chat field
             self.window.chat.append(data)
 
         self.quit()
@@ -203,7 +205,7 @@ class ClientThread(Thread):
                                            QtWidgets.QMessageBox.Ok)
             EXIT_FLAG = True
 
-        # recieve loop
+        # Recieve loop
         self.recv_loop()
 
 
