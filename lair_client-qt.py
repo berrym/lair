@@ -18,8 +18,10 @@ def kill_proc_tree(pid):
     parent = psutil.Process(pid)
     parent.kill()
 
+
 def formatText(color='black', text=''):
     return ('<font color="{}">{}</font>'.format(color, text))
+
 
 class ConnectionDialog(QtWidgets.QDialog):
     """Get Server Options."""
@@ -179,7 +181,7 @@ class ClientThread(Thread):
                 EXIT_FLAG = True
 
             # add recieved text to chat field
-            self.window.chat.append(data)
+            self.window.chat.append(formatText(color='blue', text=data))
 
         self.quit()
 
@@ -192,13 +194,6 @@ class ClientThread(Thread):
 
         try:
             TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error as err:
-            QtWidgets.QMessageBox.critical(self.window,
-                                           'Error',
-                                           str(err),
-                                           QtWidgets.QMessageBox.Ok)
-            EXIT_FLAG = True
-        try:
             TCP_CLIENT.connect((ADDR, PORT))
         except socket.error as err:
             QtWidgets.QMessageBox.critical(self.window,
@@ -214,8 +209,8 @@ class ClientThread(Thread):
 # __main__? Program entry point
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    opt_win = ConnectionDialog()
-    opt_win.exec_()
+    conn_win = ConnectionDialog()
+    conn_win.exec_()
     main_win = ChatWindow()
     ct = ClientThread(main_win)
     ct.start()
