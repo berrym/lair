@@ -9,7 +9,7 @@ from PyQt5 import QtCore, QtWidgets
 
 ADDR = '127.0.0.1'
 PORT = 1234
-TCP_CLIENT = None
+TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 EXIT_FLAG = False
 
 
@@ -28,7 +28,7 @@ class ConnectionDialog(QtWidgets.QDialog):
     def __init__(self):
         """Create a simple dialog.
 
-        Populate ADDR and port of server with user input.
+        Populate address and port of server with user input.
         """
         super().__init__()
         self.addressLabel = QtWidgets.QLabel('Server Address', self)
@@ -38,7 +38,7 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.portField = QtWidgets.QLineEdit(self)
         self.portField.setText(str(PORT))
         self.btnConnect = QtWidgets.QPushButton('Connect', self)
-        self.btnConnect.clicked.connect(self.set_fields)
+        self.btnConnect.clicked.connect(self.set_host)
         self.vbox = QtWidgets.QVBoxLayout()
         self.vbox.addWidget(self.addressLabel)
         self.vbox.addWidget(self.addressField)
@@ -47,10 +47,11 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.vbox.addWidget(self.btnConnect)
         self.setLayout(self.vbox)
         self.setWindowTitle('Connect to Lair Server')
-        # self.resize(250, 250)
 
-    def set_fields(self):
-        """Get user input from the text fields then exit dialog."""
+    def set_host(self):
+        """Get user input from the text fields.
+
+        Set global host variables ADDR and PORT then exit dialog."""
         global ADDR
         global PORT
         ADDR = self.addressField.text()
@@ -97,7 +98,6 @@ class ChatWindow(QtWidgets.QDialog):
 
     def quit(self):
         """Exit the program."""
-        global TCP_CLIENT
         TCP_CLIENT.close()
         self.close()
         kill_proc_tree(os.getpid())
@@ -126,17 +126,19 @@ class ChatWindow(QtWidgets.QDialog):
         # Check if EXIT_FLAG is set
         if EXIT_FLAG:
             self.quit()
-        else:
-            try:
-                TCP_CLIENT.send(bytes(text, 'utf8'))
-                self.chat.append(text)
-                self.chatTextField.setText('')
-            except socket.error as err:
-                QtWidgets.QMessageBox.critical(self.window,
-                                               'Error',
-                                               str(err),
-                                               QtWidgets.QMessageBox.Ok)
-                self.quit()
+
+        try:
+            TCP_CLIENT.send(bytes(text, 'utf8'))
+        except socket.error as err:
+            QtWidgets.QMessageBox.critical(self.window,
+                                           'Error',
+                                           str(err),
+                                           QtWidgets.QMessageBox.Ok)
+            self.quit()
+
+        # Update UI
+        self.chat.append(text)
+        self.chatTextField.setText('')
 
     def help(self):
         """Print a list of available commands."""
@@ -163,7 +165,6 @@ class ClientThread(Thread):
     def recv_loop(self):
         """Read data from server."""
         BUFSIZ = 4096
-        global TCP_CLIENT
         global EXIT_FLAG
 
         while not EXIT_FLAG:
@@ -187,13 +188,9 @@ class ClientThread(Thread):
 
     def run(self):
         """Run the client thread."""
-        global ADDR
-        global PORT
-        global TCP_CLIENT
         global EXIT_FLAG
 
         try:
-            TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             TCP_CLIENT.connect((ADDR, PORT))
         except socket.error as err:
             QtWidgets.QMessageBox.critical(self.window,
@@ -206,8 +203,8 @@ class ClientThread(Thread):
         self.recv_loop()
 
 
-# __main__? Program entry point
-if __name__ == '__main__':
+def main():
+    """Main function."""
     app = QtWidgets.QApplication(sys.argv)
     conn_win = ConnectionDialog()
     conn_win.exec_()
@@ -216,3 +213,8 @@ if __name__ == '__main__':
     ct.start()
     main_win.exec_()
     sys.exit(app.exec_())
+
+
+# __main__? Program entry point
+if __name__ == '__main__':
+    main()
