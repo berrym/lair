@@ -23,6 +23,14 @@ def formatText(color='black', text=''):
     return ('<font color="{}">{}</font>'.format(color, text))
 
 
+def CriticalError(parent=None, err=None):
+    """Display an error message."""
+    QtWidgets.QMessageBox.critical(parent,
+                                   'Error',
+                                   str(err),
+                                   QtWidgets.QMessageBox.Ok)
+
+
 class ConnectionDialog(QtWidgets.QDialog):
     """Get Server Options."""
     def __init__(self):
@@ -114,13 +122,12 @@ class ChatWindow(QtWidgets.QDialog):
             return self.help()
         elif text == '{quit}':
             self.chatTextField.setText('')
+
             try:
                 TCP_CLIENT.send(bytes('{quit}', 'utf8'))
             except socket.error as err:
-                QtWidgets.QMessageBox.critical(self.window,
-                                               'Error',
-                                               str(err),
-                                               QtWidgets.QMessageBox.Ok)
+                CriticalError(self.window, err)
+
             EXIT_FLAG = True
 
         # Check if EXIT_FLAG is set
@@ -130,10 +137,7 @@ class ChatWindow(QtWidgets.QDialog):
         try:
             TCP_CLIENT.send(bytes(text, 'utf8'))
         except socket.error as err:
-            QtWidgets.QMessageBox.critical(self.window,
-                                           'Error',
-                                           str(err),
-                                           QtWidgets.QMessageBox.Ok)
+            CriticalError(self.window, err)
             self.quit()
 
         # Update UI
@@ -171,10 +175,7 @@ class ClientThread(Thread):
             try:
                 data = TCP_CLIENT.recv(BUFSIZ).decode('utf8')
             except socket.error as err:
-                QtWidgets.QMessageBox.critical(self.window,
-                                               'Error',
-                                               str(err),
-                                               QtWidgets.QMessageBox.Ok)
+                CriticalError(self.window, err)
                 EXIT_FLAG = True
 
             # The server closed, set EXIT_FLAG
@@ -193,10 +194,7 @@ class ClientThread(Thread):
         try:
             TCP_CLIENT.connect((ADDR, PORT))
         except socket.error as err:
-            QtWidgets.QMessageBox.critical(self.window,
-                                           'Error',
-                                           str(err),
-                                           QtWidgets.QMessageBox.Ok)
+            CriticalError(self.window, err)
             EXIT_FLAG = True
 
         # recieve loop
