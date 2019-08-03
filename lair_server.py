@@ -163,11 +163,11 @@ class ChatServer():
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
         for sock in self.clients:
+            if omit_client and sock == omit_client:
+                pass
+
             try:
-                if omit_client and sock == omit_client:
-                    pass
-                else:
-                    sock.send(bytes(prefix, 'utf8') + msg)
+                sock.send(bytes(prefix, 'utf8') + msg)
             except socket.error as err:
                 print('Error: {}'.format(err))
 
@@ -183,13 +183,13 @@ class ChatServer():
         while True:
             try:
                 msg = client.recv(self.BUFSIZ).decode('utf8')
-                if msg == '':
-                    break
             except socket.error as err:
                 print('Error: {}'.format(err))
                 break
 
-            if msg == '{quit}':
+            if msg == '':
+                break
+            elif msg == '{quit}':
                 self.remove_client(client, nick)
                 break
             elif msg == '{who}':
