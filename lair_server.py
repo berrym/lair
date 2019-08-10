@@ -164,7 +164,7 @@ class ChatServer():
         """Broadcast a message to clients."""
         for sock in self.clients:
             if omit_client and sock == omit_client:
-                pass
+                continue
 
             try:
                 sock.send(bytes(prefix, 'utf8') + msg)
