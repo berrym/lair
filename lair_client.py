@@ -42,15 +42,12 @@ class ChatClient():
         # Connect to the server
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except OSError as err:
-            print('Error: {}'.format(err))
-            sys.exit(1)
-        try:
             self.server.connect((self.ADDR, self.PORT))
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
 
+        # Register some select events
         self.sel.register(self.server, selectors.EVENT_READ, self.read_server)
         self.sel.register(sys.stdin, selectors.EVENT_READ, self.user_input)
 
@@ -75,7 +72,6 @@ class ChatClient():
         print(msg)
 
         if msg == 'The lair is closed.':
-            self.server.close()
             self.exit_flag = True
 
     def user_input(self, key, mask):
