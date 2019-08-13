@@ -3,7 +3,7 @@
 """Server for multithreaded (asynchronous) chat application."""
 
 import threading
-import select
+import selectors
 import socket
 import sys
 
@@ -29,12 +29,14 @@ class ChatServer():
             ADDR: Tuple value of (HOST, PORT)
             BUFSIZ: Buffer size for packets being sent/recieved
             server: Socket used for communications
+            sel: Default I/O multiplexing selector
         """
         self.exit_flag = False
         self.clients = {}
         self.addresses = {}
         self.MAX_QUEUE = 5
         self.HOST = sys.argv[1]
+        self.sel = selectors.DefaultSelector()
 
         # Set the listening port number
         try:
@@ -50,21 +52,24 @@ class ChatServer():
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
         try:
             self.server.bind(self.ADDR)
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
+
+        self.sel.register(self.server, selectors.EVENT_READ, self.spawn_client)
+        self.sel.register(sys.stdin, selectors.EVENT_READ, self.admin_input)
 
     def run(self):
         """Run the chat server."""
         try:
             self.server.listen(self.MAX_QUEUE)
             print('Waiting for connections...')
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
 
         # Start the main thread
@@ -77,32 +82,36 @@ class ChatServer():
         while not self.exit_flag:
             self.select_loop()
 
+    def admin_input(self, key, mask):
+        """Read from sys.stdin for administrative commands."""
+        command = input('')
+        if command == 'quit':
+            self.close_server()
+        elif command == 'who':
+            self.who()
+        else:
+            print('Error: unknown command {}'.format(command))
+
     def select_loop(self):
         """Select between reading from server socket and standard input."""
-        sockets = [sys.stdin, self.server]
-        rlist, wlist, xlist = select.select(sockets, [], [], 60)
-
-        for sock in rlist:
-            if sock == sys.stdin:
-                command = input('')
-                if command == 'quit':
-                    self.close_server()
-                elif command == 'who':
-                    self.who()
-                else:
-                    print('Error: unknown command {}'.format(command))
-            else:
-                self.spawn_client()
+        events = self.sel.select()
+        for key, mask in events:
+            callback = key.data
+            callback(key.fileobj, mask)
 
     def close_server(self):
         """Shutdown the chat server."""
         self.broadcast_to_all(bytes('The lair is closed.', 'utf8'))
 
         try:
+            self.server.shutdown(socket.SHUT_RDWR)
             self.server.close()
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
         finally:
+            self.sel.unregister(self.server)
+            self.sel.unregister(sys.stdin)
+            self.sel.close()
             self.exit_flag = True
 
     def who(self):
@@ -112,7 +121,7 @@ class ChatServer():
                               self.addresses.values()):
             print('{} at {}:{}'.format(nick, *addr))
 
-    def spawn_client(self):
+    def spawn_client(self, client, mask):
         """Spawn a new client thread."""
         try:
             client, client_address = self.server.accept()
@@ -120,11 +129,10 @@ class ChatServer():
             client.send(bytes('You have entered the lair!\n', 'utf8'))
             client.send(bytes('Enter your name!', 'utf8'))
             self.addresses[client] = client_address
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             return
 
-        # Start the client thread
         threading.Thread(target=self.handle_client, args=(client,)).start()
 
     def handle_client(self, client):
@@ -136,7 +144,7 @@ class ChatServer():
         msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
         try:
             client.send(bytes(msg, 'utf8'))
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             return
 
@@ -155,7 +163,7 @@ class ChatServer():
                 msg = '{} is already taken, choose another name.'.format(nick)
                 try:
                     client.send(bytes(msg, 'utf8'))
-                except socket.error as err:
+                except OSError as err:
                     print('Error: {}'.format(err))
             else:
                 return nick
@@ -168,14 +176,14 @@ class ChatServer():
 
             try:
                 sock.send(bytes(prefix, 'utf8') + msg)
-            except socket.error as err:
+            except OSError as err:
                 print('Error: {}'.format(err))
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
         try:
             client.send(bytes(prefix, 'utf8') + msg)
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
 
     def client_thread_loop(self, client, nick):
@@ -183,7 +191,7 @@ class ChatServer():
         while True:
             try:
                 msg = client.recv(self.BUFSIZ).decode('utf8')
-            except socket.error as err:
+            except OSError as err:
                 print('Error: {}'.format(err))
                 break
 
