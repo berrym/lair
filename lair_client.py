@@ -3,7 +3,7 @@
 """Single threaded chat client for chat server application."""
 
 import socket
-import select
+import selectors
 import sys
 
 
@@ -24,9 +24,11 @@ class ChatClient():
             PORT: Server's listening port
             BUFSIZ: Buffer size for packet sending/recieving
             server: Socket connection to the server
+            sel: Default I/O multiplexing selector
         """
         self.exit_flag = False
         self.ADDR = sys.argv[1]
+        self.sel = selectors.DefaultSelector()
 
         # Set the server's listening port
         try:
@@ -40,55 +42,67 @@ class ChatClient():
         # Connect to the server
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
         try:
             self.server.connect((self.ADDR, self.PORT))
-        except socket.error as err:
+        except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
+
+        self.sel.register(self.server, selectors.EVENT_READ, self.read_server)
+        self.sel.register(sys.stdin, selectors.EVENT_READ, self.user_input)
 
     def run(self):
         """Run a client session."""
         while not self.exit_flag:
             self.select_loop()
 
+        # Clean up
+        self.sel.unregister(self.server)
+        self.sel.unregister(sys.stdin)
+        self.sel.close()
+        self.server.close()
+
+    def read_server(self, key, mask):
+        """Read data from the server."""
+        try:
+            msg = self.server.recv(self.BUFSIZ).decode('utf8')
+        except OSError as err:
+            print('Error: {}'.format(err))
+
+        print(msg)
+
+        if msg == 'The lair is closed.':
+            self.server.close()
+            self.exit_flag = True
+
+    def user_input(self, key, mask):
+        """Read input from the user."""
+        msg = input('')
+        if msg == '{help}':
+            print('{:*^40}'.format(' Available Commands '))
+            print('{help}:\tThis help message')
+            print('{who}:\tA list of connected users')
+            print('{quit}:\tExit this client session')
+            return
+
+        try:
+            self.server.send(bytes(msg, 'utf8'))
+        except OSError as err:
+            print('Error: {}'.format(err))
+            sys.exit(1)
+
+        if msg == '{quit}':
+            self.exit_flag = True
+
     def select_loop(self):
         """Select between reading from server socket and standard input."""
-        sockets = [sys.stdin, self.server]
-
-        rlist, wlist, xlist = select.select(sockets, [], [], 60)
-
-        for sock in rlist:
-            if sock == self.server:
-                try:
-                    msg = sock.recv(self.BUFSIZ).decode('utf8')
-                    if msg == 'The lair is closed.':
-                        print(msg)
-                        self.server.close()
-                        self.exit_flag = True
-                        break
-                    else:
-                        print(msg)
-                except socket.error as err:
-                    print('Error: {}'.format(err))
-            else:
-                msg = input('')
-                if msg == '{help}':
-                    print('{:*^40}'.format(' Available Commands '))
-                    print('{help}:\tThis help message')
-                    print('{who}:\tA list of connected users')
-                    print('{quit}:\tExit this client session')
-                    continue
-                try:
-                    self.server.send(bytes(msg, 'utf8'))
-                except socket.error as err:
-                    print('Error: {}'.format(err))
-                    sys.exit(1)
-                if msg == '{quit}':
-                    self.exit_flag = True
-                    break
+        events = self.sel.select()
+        for key, mask in events:
+            callback = key.data
+            callback(key.fileobj, mask)
 
 
 def main():
