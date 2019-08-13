@@ -52,15 +52,12 @@ class ChatServer():
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except OSError as err:
-            print('Error: {}'.format(err))
-            sys.exit(1)
-        try:
             self.server.bind(self.ADDR)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
 
+        # Register some select events
         self.sel.register(self.server, selectors.EVENT_READ, self.spawn_client)
         self.sel.register(sys.stdin, selectors.EVENT_READ, self.admin_input)
 
@@ -68,9 +65,10 @@ class ChatServer():
         """Run the chat server."""
         try:
             self.server.listen(self.MAX_QUEUE)
-            print('Waiting for connections...')
         except OSError as err:
             print('Error: {}'.format(err))
+
+        print('Waiting for connections...')
 
         # Start the main thread
         accept_thread = threading.Thread(target=self.accept_connections)
