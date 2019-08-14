@@ -78,7 +78,7 @@ class ChatServer():
     def accept_connections(self):
         """Accept incoming client connections."""
         while not self.exit_flag:
-            self.select_loop()
+            self.event_loop()
 
     def admin_input(self, key, mask):
         """Read from sys.stdin for administrative commands."""
@@ -90,7 +90,7 @@ class ChatServer():
         else:
             print('Error: unknown command {}'.format(command))
 
-    def select_loop(self):
+    def event_loop(self):
         """Select between reading from server socket and standard input."""
         events = self.sel.select()
         for key, mask in events:

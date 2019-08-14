@@ -54,7 +54,7 @@ class ChatClient():
     def run(self):
         """Run a client session."""
         while not self.exit_flag:
-            self.select_loop()
+            self.event_loop()
 
         # Clean up
         self.sel.unregister(self.server)
@@ -93,7 +93,7 @@ class ChatClient():
         if msg == '{quit}':
             self.exit_flag = True
 
-    def select_loop(self):
+    def event_loop(self):
         """Select between reading from server socket and standard input."""
         events = self.sel.select()
         for key, mask in events:
