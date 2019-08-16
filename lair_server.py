@@ -2,10 +2,18 @@
 
 """Server for multithreaded (asynchronous) chat application."""
 
+import logging
 import threading
 import selectors
 import socket
 import sys
+
+# Enable logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(threadName)-12.12s]'
+    + '[%(levelname)-5.5s]  %(message)s',
+    handlers=[logging.FileHandler('lair.log'), logging.StreamHandler()])
 
 
 def usage():
@@ -54,7 +62,7 @@ class ChatServer():
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server.bind(self.ADDR)
         except OSError as err:
-            print('Error: {}'.format(err))
+            logging.critical('Error: {}'.format(err))
             sys.exit(1)
 
         # Register some select events
@@ -66,14 +74,15 @@ class ChatServer():
         try:
             self.server.listen(self.MAX_QUEUE)
         except OSError as err:
-            print('Error: {}'.format(err))
-
-        print('Waiting for connections...')
+            logging.critical('Error: {}'.format(err))
+            sys.exit(1)
 
         # Start the main thread
+        logging.info('Starting main thread.  Waiting for connections.')
         accept_thread = threading.Thread(target=self.accept_connections)
         accept_thread.start()
         accept_thread.join()
+        logging.info('Main thread exited.')
 
     def accept_connections(self):
         """Accept incoming client connections."""
@@ -105,7 +114,7 @@ class ChatServer():
             self.server.shutdown(socket.SHUT_RDWR)
             self.server.close()
         except OSError as err:
-            print('Error: {}'.format(err))
+            logging.warn('Error: {}'.format(err))
         finally:
             self.sel.unregister(self.server)
             self.sel.unregister(sys.stdin)
@@ -123,15 +132,17 @@ class ChatServer():
         """Spawn a new client thread."""
         try:
             client, client_address = self.server.accept()
-            print('{}:{} has connected.'.format(*client_address))
+            logging.info('{}:{} has connected.'.format(*client_address))
             client.send(bytes('You have entered the lair!\n', 'utf8'))
             client.send(bytes('Enter your name!', 'utf8'))
             self.addresses[client] = client_address
         except OSError as err:
-            print('Error: {}'.format(err))
+            logging.warn('Error: {}'.format(err))
             return
 
+        logging.info('Starting a client thread for {}'.format(client))
         threading.Thread(target=self.handle_client, args=(client,)).start()
+        logging.info('Client thread started.')
 
     def handle_client(self, client):
         """Handles a single client connection."""
@@ -143,7 +154,7 @@ class ChatServer():
         try:
             client.send(bytes(msg, 'utf8'))
         except OSError as err:
-            print('Error: {}'.format(err))
+            logging.warn('Error: {}'.format(err))
             return
 
         # Inform other clients that a new one has connected
@@ -162,8 +173,9 @@ class ChatServer():
                 try:
                     client.send(bytes(msg, 'utf8'))
                 except OSError as err:
-                    print('Error: {}'.format(err))
+                    logging.warning('Error: {}'.format(err))
             else:
+                logging.info('{} logged in as {}'.format(client, nick))
                 return nick
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
@@ -175,14 +187,14 @@ class ChatServer():
             try:
                 sock.send(bytes(prefix, 'utf8') + msg)
             except OSError as err:
-                print('Error: {}'.format(err))
+                logging.warning('Error: {}'.format(err))
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
         try:
             client.send(bytes(prefix, 'utf8') + msg)
         except OSError as err:
-            print('Error: {}'.format(err))
+            logging.warning('Error: {}'.format(err))
 
     def client_thread_loop(self, client, nick):
         """Send/Receive loop for client thread."""
@@ -190,7 +202,7 @@ class ChatServer():
             try:
                 msg = client.recv(self.BUFSIZ).decode('utf8')
             except OSError as err:
-                print('Error: {}'.format(err))
+                logging.warning('Error: {}'.format(err))
                 break
 
             if msg == '':
@@ -205,7 +217,7 @@ class ChatServer():
 
     def remove_client(self, client, nick):
         """Remove a client connection."""
-        print('{}:{} has disconnected.'.format(*self.addresses[client]))
+        logging.info('{}:{} has disconnected.'.format(*self.addresses[client]))
         del self.addresses[client]
         del self.clients[client]
         msg = '{} has left the lair.'.format(nick)
