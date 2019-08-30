@@ -7,6 +7,7 @@ import threading
 import selectors
 import socket
 import sys
+from AESCipher import cipher
 
 # Enable logging
 logging.basicConfig(
@@ -108,7 +109,7 @@ class ChatServer():
 
     def close_server(self):
         """Shutdown the chat server."""
-        self.broadcast_to_all(bytes('The lair is closed.', 'utf8'))
+        self.broadcast_to_all('The lair is closed.')
 
         try:
             self.server.shutdown(socket.SHUT_RDWR)
@@ -133,8 +134,10 @@ class ChatServer():
         try:
             client, client_address = self.server.accept()
             logging.info('{}:{} has connected.'.format(*client_address))
-            client.send(bytes('You have entered the lair!\n', 'utf8'))
-            client.send(bytes('Enter your name!', 'utf8'))
+            msg = cipher.encrypt('You have entered the lair!\n')
+            client.send(msg)
+            msg = cipher.encrypt('Enter your name!')
+            client.send(msg)
             self.addresses[client] = client_address
         except OSError as err:
             logging.warn('Error: {}'.format(err))
@@ -151,15 +154,16 @@ class ChatServer():
         self.clients[client] = nick
 
         msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
+        msg = cipher.encrypt(msg)
         try:
-            client.send(bytes(msg, 'utf8'))
+            client.send(msg)
         except OSError as err:
             logging.warn('Error: {}'.format(err))
             return
 
         # Inform other clients that a new one has connected
         msg = '{} has entered the lair!'.format(nick)
-        self.broadcast_to_all(bytes(msg, 'utf8'), client)
+        self.broadcast_to_all(msg, client)
 
         # Start sending/recieving messages with client thread
         self.client_thread_loop(client, nick)
@@ -167,11 +171,15 @@ class ChatServer():
     def get_nick(self, client):
         """Get a unique nickname from the client."""
         while True:
-            nick = client.recv(self.BUFSIZ).decode('utf8')
+            nick = client.recv(self.BUFSIZ).decode('utf-8')
+            nick = cipher.decrypt(nick)
+            nick = nick.decode('utf-8')
             if nick in self.clients.values():
-                msg = '{} is already taken, choose another name.'.format(nick)
+                msg = '{} is already taken, choose another name.'.format(
+                    nick)
+                msg = cipher.encrypt(msg)
                 try:
-                    client.send(bytes(msg, 'utf8'))
+                    client.send(msg)
                 except OSError as err:
                     logging.warning('Error: {}'.format(err))
             else:
@@ -184,15 +192,19 @@ class ChatServer():
             if omit_client and sock == omit_client:
                 continue
 
+            msg = prefix + msg
+            msg = cipher.encrypt(msg)
             try:
-                sock.send(bytes(prefix, 'utf8') + msg)
+                sock.send(msg)
             except OSError as err:
                 logging.warning('Error: {}'.format(err))
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
+        msg = prefix + msg
+        msg = cipher.encrypt(msg)
         try:
-            client.send(bytes(prefix, 'utf8') + msg)
+            client.send(msg)
         except OSError as err:
             logging.warning('Error: {}'.format(err))
 
@@ -200,7 +212,9 @@ class ChatServer():
         """Send/Receive loop for client thread."""
         while True:
             try:
-                msg = client.recv(self.BUFSIZ).decode('utf8')
+                msg = client.recv(self.BUFSIZ)
+                msg = cipher.decrypt(msg)
+                msg = msg.decode('utf-8')
             except OSError as err:
                 logging.warning('Error: {}'.format(err))
                 break
@@ -213,7 +227,7 @@ class ChatServer():
             elif msg == '{who}':
                 self.tell_who(client)
             else:
-                self.broadcast_to_all(bytes(msg, 'utf8'), client, nick + ': ')
+                self.broadcast_to_all(msg, client, nick + ': ')
 
     def remove_client(self, client, nick):
         """Remove a client connection."""
@@ -221,7 +235,7 @@ class ChatServer():
         del self.addresses[client]
         del self.clients[client]
         msg = '{} has left the lair.'.format(nick)
-        self.broadcast_to_all(bytes(msg, 'utf8'), client)
+        self.broadcast_to_all(msg, client)
         client.close()
 
     def tell_who(self, client):
@@ -229,7 +243,7 @@ class ChatServer():
         for nick, addr in zip(self.clients.values(),
                               self.addresses.values()):
             msg = '{} at {}\n'.format(nick, addr[0])
-            self.broadcast_to_client(bytes(msg, 'utf8'), client)
+            self.broadcast_to_client(msg, client)
 
 
 def main():

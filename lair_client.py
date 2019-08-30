@@ -5,6 +5,7 @@
 import socket
 import selectors
 import sys
+from AESCipher import cipher
 
 
 def usage():
@@ -65,7 +66,9 @@ class ChatClient():
     def read_server(self, key, mask):
         """Read data from the server."""
         try:
-            msg = self.server.recv(self.BUFSIZ).decode('utf8')
+            msg = self.server.recv(self.BUFSIZ)
+            msg = cipher.decrypt(msg)
+            msg = msg.decode('utf-8')
         except OSError as err:
             print('Error: {}'.format(err))
 
@@ -85,13 +88,16 @@ class ChatClient():
             return
 
         try:
-            self.server.send(bytes(msg, 'utf8'))
+            msg = cipher.encrypt(msg)
+            self.server.send(msg)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
 
-        if msg == '{quit}':
+        msg = cipher.decrypt(msg)
+        if msg.decode('utf-8') == '{quit}':
             self.exit_flag = True
+            return
 
     def event_loop(self):
         """Select between reading from server socket and standard input."""
