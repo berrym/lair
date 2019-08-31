@@ -147,7 +147,10 @@ class ChatServer():
         """Handles a single client connection."""
         # Get a unique nickname from the client
         nick = self.get_nick(client)
-        self.clients[client] = nick
+        if nick:
+            self.clients[client] = nick
+        else:
+            return
 
         # Welcome the new client to the lair
         msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
@@ -163,7 +166,15 @@ class ChatServer():
     def get_nick(self, client):
         """Get a unique nickname from the client."""
         while True:
-            nick = client.recv(self.BUFSIZ)
+            try:
+                nick = client.recv(self.BUFSIZ)
+            except OSError as err:
+                logging.warning('Error: {}'.format(err))
+                return False
+
+            if not nick:
+                return False
+
             nick = cipher.decrypt(nick)
             nick = nick.decode('utf-8', 'ignore')
             if nick in self.clients.values():
@@ -187,6 +198,7 @@ class ChatServer():
                 sock.send(msg)
             except OSError as err:
                 logging.warning('Error: {}'.format(err))
+                self.remove_client(sock, 'Unknown client')
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
@@ -197,21 +209,28 @@ class ChatServer():
             client.send(msg)
         except OSError as err:
             logging.warning('Error: {}'.format(err))
+            self.remove_client(client, 'Unknown visitor')
 
     def client_thread_loop(self, client, nick):
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
                 msg = client.recv(self.BUFSIZ)
-                msg = cipher.decrypt(msg)
-                msg = msg.decode('utf-8', 'ignore')
-            except (OSError, UnicodeDecodeError) as err:
+            except OSError as err:
                 logging.warning('Error: {}'.format(err))
                 break
 
-            if msg == '':
+            if not msg:
+                logging.warn('Error: unable to recvieve from {}'.format(
+                    nick))
+                self.remove_client(client, nick)
                 break
-            elif msg == '{quit}':
+
+            # Decrypt the message
+            msg = cipher.decrypt(msg)
+            msg = msg.decode('utf-8', 'ignore')
+
+            if msg == '{quit}':
                 self.remove_client(client, nick)
                 break
             elif msg == '{who}':
