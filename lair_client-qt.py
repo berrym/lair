@@ -6,6 +6,8 @@ import socket
 import psutil
 from threading import Thread
 from PyQt5 import QtCore, QtWidgets
+from AESCipher import cipher
+
 
 ADDR = '127.0.0.1'
 PORT = 1234
@@ -124,8 +126,10 @@ class ChatWindow(QtWidgets.QDialog):
             self.chatTextField.setText('')
 
             try:
-                TCP_CLIENT.send(bytes('{quit}', 'utf8'))
-            except socket.error as err:
+                text = cipher.encrypt(text)
+                text = text.decode('utf-8', 'ignore')
+                TCP_CLIENT.send(text)
+            except (OSError, UnicodeDecodeError) as err:
                 CriticalError(self.window, err)
 
             EXIT_FLAG = True
@@ -135,12 +139,15 @@ class ChatWindow(QtWidgets.QDialog):
             self.quit()
 
         try:
-            TCP_CLIENT.send(bytes(text, 'utf8'))
-        except socket.error as err:
+            text = cipher.encrypt(text)
+            TCP_CLIENT.send(text)
+        except OSError as err:
             CriticalError(self.window, err)
             self.quit()
 
         # Update UI
+        text = cipher.decrypt(text)
+        text = text.decode('utf-8', 'ignore')
         self.chat.append(text)
         self.chatTextField.setText('')
 
@@ -173,8 +180,10 @@ class ClientThread(Thread):
 
         while not EXIT_FLAG:
             try:
-                data = TCP_CLIENT.recv(BUFSIZ).decode('utf8')
-            except socket.error as err:
+                data = TCP_CLIENT.recv(BUFSIZ)
+                data = cipher.decrypt(data)
+                data = data.decode('utf-8', 'ignore')
+            except (OSError, UnicodeDecodeError) as err:
                 CriticalError(self.window, err)
                 EXIT_FLAG = True
 
@@ -193,7 +202,7 @@ class ClientThread(Thread):
 
         try:
             TCP_CLIENT.connect((ADDR, PORT))
-        except socket.error as err:
+        except OSError as err:
             CriticalError(self.window, err)
             EXIT_FLAG = True
 

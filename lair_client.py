@@ -68,8 +68,8 @@ class ChatClient():
         try:
             msg = self.server.recv(self.BUFSIZ)
             msg = cipher.decrypt(msg)
-            msg = msg.decode('utf-8')
-        except OSError as err:
+            msg = msg.decode('utf-8', 'ignore')
+        except (OSError, UnicodeDecodeError)  as err:
             print('Error: {}'.format(err))
 
         print(msg)
@@ -95,7 +95,8 @@ class ChatClient():
             sys.exit(1)
 
         msg = cipher.decrypt(msg)
-        if msg.decode('utf-8') == '{quit}':
+
+        if msg.decode('utf-8', 'ignore') == '{quit}':
             self.exit_flag = True
             return
 

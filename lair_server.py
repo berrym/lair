@@ -171,9 +171,9 @@ class ChatServer():
     def get_nick(self, client):
         """Get a unique nickname from the client."""
         while True:
-            nick = client.recv(self.BUFSIZ).decode('utf-8')
+            nick = client.recv(self.BUFSIZ)
             nick = cipher.decrypt(nick)
-            nick = nick.decode('utf-8')
+            nick = nick.decode('utf-8', 'ignore')
             if nick in self.clients.values():
                 msg = '{} is already taken, choose another name.'.format(
                     nick)
@@ -192,7 +192,7 @@ class ChatServer():
             if omit_client and sock == omit_client:
                 continue
 
-            msg = prefix + msg
+            msg = str(prefix) + str(msg)
             msg = cipher.encrypt(msg)
             try:
                 sock.send(msg)
@@ -210,12 +210,12 @@ class ChatServer():
 
     def client_thread_loop(self, client, nick):
         """Send/Receive loop for client thread."""
-        while True:
+        while not self.exit_flag:
             try:
                 msg = client.recv(self.BUFSIZ)
                 msg = cipher.decrypt(msg)
-                msg = msg.decode('utf-8')
-            except OSError as err:
+                msg = msg.decode('utf-8', 'ignore')
+            except (OSError, UnicodeDecodeError) as err:
                 logging.warning('Error: {}'.format(err))
                 break
 
@@ -242,7 +242,7 @@ class ChatServer():
         """Send a list of connected users to a client."""
         for nick, addr in zip(self.clients.values(),
                               self.addresses.values()):
-            msg = '{} at {}\n'.format(nick, addr[0])
+            msg = '{} at {}\r\n'.format(nick, addr[0])
             self.broadcast_to_client(msg, client)
 
 
