@@ -1,5 +1,19 @@
-This is a small text chat application written in python3.
-It consists of a server and client script.  It uses the select
-module on sockets which works fine on *NIX like systems but not
-on Windows.  This is unlikely to change because it is a toy program
-and I really dont care if it works on Windows.
+DESCRIPTION
+
+This is a small chat application written in python3.
+It consists of a server and two client (one console, the other a simple Qt
+Gui) scripts.  It uses the selectors module on sockets and sys.stdin
+which works fine on *NIX like systems but not as far I as know on Windows.
+This is unlikely to change because it is a toy program and I really dont
+care if it works on Windows. It uses an AES CBC symmetrical encryption.
+
+REQUIREMENTS
+
+A recent version of Python 3.  Tested with 3.6+
+PyCryptoDome: pip install pycryptodome
+
+For the Gui
+
+PyQt5: many ways to install including pip
+psutil: pip install psutil
+
