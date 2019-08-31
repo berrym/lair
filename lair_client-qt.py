@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+"""Simple Qt client to The Lair chat server."""
+
 import os
 import sys
 import socket
@@ -9,6 +11,7 @@ from PyQt5 import QtCore, QtWidgets
 from AESCipher import cipher
 
 
+# Global variables
 ADDR = '127.0.0.1'
 PORT = 1234
 TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,6 +25,7 @@ def kill_proc_tree(pid):
 
 
 def formatText(color='black', text=''):
+    """Perform some basic formatting on text."""
     return ('<font color="{}">{}</font>'.format(color, text).replace('\n', '<br>'))
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Single threaded chat client for chat server application."""
+"""Single threaded cli chat client for The Lair chat server application."""
 
 import socket
 import selectors

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Server for multithreaded (asynchronous) chat application."""
+"""The Lair: Server for multithreaded (asynchronous) chat application."""
 
 import logging
 import threading
@@ -187,6 +187,7 @@ class ChatServer():
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
+        # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
 
@@ -202,6 +203,7 @@ class ChatServer():
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
+        # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
 
