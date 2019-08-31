@@ -131,16 +131,12 @@ class ChatServer():
 
     def spawn_client(self, client, mask):
         """Spawn a new client thread."""
-        try:
-            client, client_address = self.server.accept()
-            logging.info('{}:{} has connected.'.format(*client_address))
-            msg = 'You have entered the lair!\nEnter your name!'
-            msg = cipher.encrypt(msg)
-            client.send(msg)
-            self.addresses[client] = client_address
-        except OSError as err:
-            logging.warn('Error: {}'.format(err))
-            return
+        client, client_address = self.server.accept()
+        logging.info('{}:{} has connected.'.format(*client_address))
+
+        msg = 'You have entered the lair!\nEnter your name!'
+        self.broadcast_to_client(msg, client)
+        self.addresses[client] = client_address
 
         logging.info('Starting a client thread for {}'.format(client))
         threading.Thread(target=self.handle_client, args=(client,)).start()
@@ -152,13 +148,9 @@ class ChatServer():
         nick = self.get_nick(client)
         self.clients[client] = nick
 
+        # Welcome the new client to the lair
         msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
-        msg = cipher.encrypt(msg)
-        try:
-            client.send(msg)
-        except OSError as err:
-            logging.warn('Error: {}'.format(err))
-            return
+        self.broadcast_to_client(msg, client)
 
         # Inform other clients that a new one has connected
         msg = '{} has entered the lair!'.format(nick)
@@ -176,11 +168,7 @@ class ChatServer():
             if nick in self.clients.values():
                 msg = '{} is already taken, choose another name.'.format(
                     nick)
-                msg = cipher.encrypt(msg)
-                try:
-                    client.send(msg)
-                except OSError as err:
-                    logging.warning('Error: {}'.format(err))
+                self.broadcast_to_client(msg, client)
             else:
                 logging.info('{} logged in as {}'.format(client, nick))
                 return nick
