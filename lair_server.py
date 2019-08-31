@@ -7,6 +7,7 @@ import threading
 import selectors
 import socket
 import sys
+import time
 from AESCipher import cipher
 
 # Enable logging
@@ -234,6 +235,7 @@ class ChatServer():
                               self.addresses.values()):
             msg = '{} at {}\n'.format(nick, addr[0])
             self.broadcast_to_client(msg, client)
+            time.sleep(0.1)
 
 
 def main():
