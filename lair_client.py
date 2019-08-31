@@ -61,6 +61,7 @@ class ChatClient():
         self.sel.unregister(self.server)
         self.sel.unregister(sys.stdin)
         self.sel.close()
+        self.server.shutdown(socket.SHUT_RDWR)
         self.server.close()
 
     def read_server(self, key, mask):

@@ -187,12 +187,13 @@ class ChatServer():
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
+        msg = str(prefix) + str(msg)
+        msg = cipher.encrypt(msg)
+
         for sock in self.clients:
             if omit_client and sock == omit_client:
                 continue
 
-            msg = str(prefix) + str(msg)
-            msg = cipher.encrypt(msg)
             try:
                 sock.send(msg)
             except OSError as err:
@@ -200,8 +201,9 @@ class ChatServer():
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
-        msg = prefix + msg
+        msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
+
         try:
             client.send(msg)
         except OSError as err:
@@ -235,13 +237,14 @@ class ChatServer():
         del self.clients[client]
         msg = '{} has left the lair.'.format(nick)
         self.broadcast_to_all(msg, client)
+        client.shutdown(socket.SHUT_RDWR)
         client.close()
 
     def tell_who(self, client):
         """Send a list of connected users to a client."""
         for nick, addr in zip(self.clients.values(),
                               self.addresses.values()):
-            msg = '{} at {}\r\n'.format(nick, addr[0])
+            msg = '{} at {}\n'.format(nick, addr[0])
             self.broadcast_to_client(msg, client)
 
 

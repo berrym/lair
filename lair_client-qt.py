@@ -22,7 +22,7 @@ def kill_proc_tree(pid):
 
 
 def formatText(color='black', text=''):
-    return ('<font color="{}">{}</font>'.format(color, text))
+    return ('<font color="{}">{}</font>'.format(color, text).replace('\n', '<br>'))
 
 
 def CriticalError(parent=None, err=None):
@@ -108,6 +108,7 @@ class ChatWindow(QtWidgets.QDialog):
 
     def quit(self):
         """Exit the program."""
+        TCP_CLIENT.shutdown(socket.SHUT_RDWR)
         TCP_CLIENT.close()
         self.close()
         kill_proc_tree(os.getpid())
@@ -153,7 +154,7 @@ class ChatWindow(QtWidgets.QDialog):
     def help(self):
         """Print a list of available commands."""
         self.chat.append('Available Commands:\n')
-        self.chat.append('\t{help}:\t This help menu')
+        self.chat.append('\t{help}:\tThis help menu')
         self.chat.append('\t{quit}:\tExit program')
         self.chat.append('\t{who}\tList of user names in the lair.')
 
@@ -168,7 +169,7 @@ class ClientThread(Thread):
     def quit(self):
         """Exit the program."""
         global TCP_CLIENT
-        TCP_CLIENT.shutdown()
+        TCP_CLIENT.shutdown(socket.SHUT_RDWR)
         TCP_CLIENT.close()
         self.window.close()
         kill_proc_tree(os.getpid())
