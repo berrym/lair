@@ -127,7 +127,6 @@ class ChatWindow(QtWidgets.QDialog):
 
             try:
                 text = cipher.encrypt(text)
-                text = text.decode('utf-8', 'ignore')
                 TCP_CLIENT.send(text)
             except (OSError, UnicodeDecodeError) as err:
                 CriticalError(self.window, err)
@@ -169,6 +168,7 @@ class ClientThread(Thread):
     def quit(self):
         """Exit the program."""
         global TCP_CLIENT
+        TCP_CLIENT.shutdown()
         TCP_CLIENT.close()
         self.window.close()
         kill_proc_tree(os.getpid())

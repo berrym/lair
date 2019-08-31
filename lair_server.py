@@ -134,9 +134,8 @@ class ChatServer():
         try:
             client, client_address = self.server.accept()
             logging.info('{}:{} has connected.'.format(*client_address))
-            msg = cipher.encrypt('You have entered the lair!\n')
-            client.send(msg)
-            msg = cipher.encrypt('Enter your name!')
+            msg = 'You have entered the lair!\nEnter your name!'
+            msg = cipher.encrypt(msg)
             client.send(msg)
             self.addresses[client] = client_address
         except OSError as err:
