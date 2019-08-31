@@ -10,10 +10,12 @@ care if it works on Windows. It uses an AES CBC symmetrical encryption.
 REQUIREMENTS
 
 A recent version of Python 3.  Tested with 3.6+
-PyCryptoDome: pip install pycryptodome
+
+PyCryptoDomex: pip install pycryptodomex
 
 For the Gui
 
 PyQt5: many ways to install including pip
+
 psutil: pip install psutil
 
