@@ -247,8 +247,13 @@ class ChatServer():
         del self.clients[client]
         msg = '{} has left the lair.'.format(nick)
         self.broadcast_to_all(msg, client)
-        client.shutdown(socket.SHUT_RDWR)
-        client.close()
+
+        # Make sure client is disconnected
+        try:
+            client.shutdown(socket.SHUT_RDWR)
+            client.close()
+        except OSError as err:
+            logging.warn('Remove client warning: {}'.format(err))
 
     def tell_who(self, client):
         """Send a list of connected users to a client."""
