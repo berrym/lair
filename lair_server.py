@@ -8,6 +8,7 @@ import selectors
 import socket
 import sys
 import time
+import argparse
 from AESCipher import cipher
 
 # Enable logging
@@ -18,15 +19,9 @@ logging.basicConfig(
     handlers=[logging.FileHandler('lair.log'), logging.StreamHandler()])
 
 
-def usage():
-    """Print out proper invocation of program."""
-    print('usage: {} ipaddress port'.format(sys.argv[0]))
-    sys.exit(1)
-
-
 class ChatServer():
     """A simple chatroom server."""
-    def __init__(self):
+    def __init__(self, host, port):
         """Initialize the chat server.
 
         Important variables set:
@@ -45,18 +40,11 @@ class ChatServer():
         self.clients = {}
         self.addresses = {}
         self.MAX_QUEUE = 5
-        self.HOST = sys.argv[1]
-        self.sel = selectors.DefaultSelector()
-
-        # Set the listening port number
-        try:
-            self.PORT = int(sys.argv[2])
-        except ValueError:
-            print('Error: port must be a number.')
-            usage()
-
+        self.HOST = host  # sys.argv[1]
+        self.PORT = port
         self.ADDR = (self.HOST, self.PORT)
         self.BUFSIZ = 4096
+        self.sel = selectors.DefaultSelector()
 
         # Create the server socket
         try:
@@ -153,7 +141,8 @@ class ChatServer():
             return
 
         # Welcome the new client to the lair
-        msg = 'Welcome to the lair {}! Type {{help}} for commands.'.format(nick)
+        msg = 'Welcome to the Lair {}! Type {{help}} for commands.'.format(
+            nick)
         self.broadcast_to_client(msg, client)
 
         # Inform other clients that a new one has connected
@@ -266,10 +255,30 @@ class ChatServer():
 
 def main():
     """Main Function."""
-    if len(sys.argv) != 3:
-        usage()
+    # Create a command line argument parser
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description='The Lair Chat Server',
+        epilog='Copyright Michael Berry 2019')
 
-    ChatServer().run()
+    # Server arguments
+    server_args = parser.add_argument_group('server arguments')
+
+    server_args.add_argument(
+        'address',
+        type=str,
+        help='specifies the address the server will bind to')
+
+    server_args.add_argument(
+        'port',
+        type=int,
+        help='specifies which port the server will bind to')
+
+    # Parse the command line
+    args = parser.parse_args()
+
+    # Run the chat server
+    ChatServer(args.address, args.port).run()
 
 
 # __main__? Program entry point

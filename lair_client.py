@@ -5,18 +5,13 @@
 import socket
 import selectors
 import sys
+import argparse
 from AESCipher import cipher
-
-
-def usage():
-    """Print out proper invocation of program."""
-    print('usage: {} ipaddress port'.format(sys.argv[0]))
-    sys.exit(1)
 
 
 class ChatClient():
     """Create a chat client."""
-    def __init__(self):
+    def __init__(self, addr, port):
         """Create a chat client connection.
 
         Variables of importance:
@@ -28,16 +23,9 @@ class ChatClient():
             sel: Default I/O multiplexing selector
         """
         self.exit_flag = False
-        self.ADDR = sys.argv[1]
+        self.ADDR = addr
+        self.PORT = port
         self.sel = selectors.DefaultSelector()
-
-        # Set the server's listening port
-        try:
-            self.PORT = int(sys.argv[2])
-        except ValueError:
-            print('Error: port must be a number.')
-            usage()
-
         self.BUFSIZ = 4096
 
         # Connect to the server
@@ -111,10 +99,30 @@ class ChatClient():
 
 def main():
     """Main function."""
-    if len(sys.argv) != 3:
-        usage()
+    # Create a command line argument parser
+    parser = argparse.ArgumentParser(
+        prog=sys.argv[0],
+        description='The Lair Chat Server Client',
+        epilog='Copyright Michael Berry 2019')
 
-    ChatClient().run()
+    # Client arguments
+    client_args = parser.add_argument_group('client arguments')
+
+    client_args.add_argument(
+        'address',
+        type=str,
+        help='specifies the server address the client will connect to')
+
+    client_args.add_argument(
+        'port',
+        type=int,
+        help='specifies which port the client should use')
+
+    # Parse the command line
+    args = parser.parse_args()
+
+    # Run the chat client
+    ChatClient(args.address, args.port).run()
 
 
 # __main__? Program entry point
