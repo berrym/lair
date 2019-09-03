@@ -8,7 +8,7 @@ from Cryptodome.Util.Padding import pad, unpad
 
 
 class AESCipher:
-    """Implement AES Continuous Block Cipher encryption and decryption."""
+    """Implement AES Cipher Block Chaining encryption and decryption."""
     def __init__(self, key):
         """Make a fixed sha256 bit length key."""
         self.key = hashlib.sha256(key.encode('utf-8')).digest()
