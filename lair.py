@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-"""lair_client.py
+"""lair.py
 
-CLI client for The Lair chat server.
+The Lair - A simple chat application.
 
 Copyright (C) <2019>  <Michael Berry>
 
@@ -22,35 +22,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import argparse
+from modules.ChatServer import ChatServer
 from modules.ChatClient import ChatClient
 
 
 def main():
-    """Main function."""
+    """Main Function."""
     # Create a command line argument parser
     parser = argparse.ArgumentParser(
-        prog=sys.argv[0],
-        description='The Lair Chat Server Client',
+        description='The Lair Chat App',
         epilog='Copyright Michael Berry 2019')
 
-    # Client arguments
-    client_args = parser.add_argument_group('client arguments')
+    lair_options = parser.add_argument_group('Lair Options')
 
-    client_args.add_argument(
+    lair_options.add_argument(
+        'session',
+        type=str,
+        help='specifies wether to run a server or client session')
+
+    lair_options.add_argument(
         'address',
         type=str,
-        help='specifies the server address the client will connect to')
+        help='specifies the address the server will bind to')
 
-    client_args.add_argument(
+    lair_options.add_argument(
         'port',
         type=int,
-        help='specifies which port the client should use')
+        help='specifies which port the server will bind to')
 
     # Parse the command line
     args = parser.parse_args()
 
-    # Run the chat client
-    ChatClient(args.address, args.port).run()
+    if args.session == 'server':
+        ChatServer(args.address, args.port).run()
+    elif args.session == 'client':
+        ChatClient(args.address, args.port).run()
+    else:
+        print('{}: error: session must be either server or client'.format(
+            sys.argv[0]))
 
 
 # __main__? Program entry point
