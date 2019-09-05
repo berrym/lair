@@ -128,7 +128,12 @@ class ChatWindow(QtWidgets.QDialog):
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
 
-    def quit(self):
+    def closeEvent(self, event):
+        """Quit app when the window is closed."""
+        self.quit()
+        event.accept()
+
+    def quit(self, event=None):
         """Exit the program."""
         TCP_CLIENT.shutdown(socket.SHUT_RDWR)
         TCP_CLIENT.close()
