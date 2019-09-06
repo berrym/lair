@@ -48,6 +48,7 @@ class ChatServer():
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server.bind(self.ADDR)
+            self.server.listen(self.MAX_QUEUE)
         except OSError as err:
             logging.critical('Error: {}'.format(err))
             sys.exit(1)
@@ -117,13 +118,19 @@ class ChatServer():
 
     def spawn_client(self, client, mask):
         """Spawn a new client thread."""
-        client, client_address = self.server.accept()
+        try:
+            client, client_address = self.server.accept()
+        except OSError as err:
+            print('Error: {}'.format(err))
+
         logging.info('{}:{} has connected.'.format(*client_address))
 
+        # Say hello
         msg = 'You have entered the lair!\nEnter your name!'
         self.broadcast_to_client(msg, client)
         self.addresses[client] = client_address
 
+        # Start the new thread
         logging.info('Starting a client thread for {}'.format(client))
         threading.Thread(target=self.handle_client, args=(client,)).start()
         logging.info('Client thread started.')

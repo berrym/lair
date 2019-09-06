@@ -53,13 +53,16 @@ class ChatClient():
         """Read data from the server."""
         try:
             msg = self.server.recv(self.BUFSIZ)
-            msg = cipher.decrypt(msg)
-            msg = msg.decode('utf-8', 'ignore')
-        except (OSError, UnicodeDecodeError)  as err:
+        except OSError as err:
             print('Error: {}'.format(err))
+            return
 
+        # Print the message
+        msg = cipher.decrypt(msg)
+        msg = msg.decode('utf-8', 'ignore')
         print(msg)
 
+        # Check if the server closed
         if msg == 'The lair is closed.':
             self.exit_flag = True
 
@@ -73,15 +76,20 @@ class ChatClient():
             print('{quit}:\tExit this client session')
             return
 
+        # Encrypt the message
+        msg = cipher.encrypt(msg)
+
+        # Send the message
         try:
-            msg = cipher.encrypt(msg)
             self.server.send(msg)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
 
+        # Decrypt the message
         msg = cipher.decrypt(msg)
 
+        # Decode the message and check if the user wants to quit
         if msg.decode('utf-8', 'ignore') == '{quit}':
             self.exit_flag = True
             return
