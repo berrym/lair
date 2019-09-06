@@ -44,7 +44,8 @@ def kill_proc_tree(pid):
 
 def formatText(color='black', text=''):
     """Perform some basic formatting on text."""
-    return ('<font color="{}">{}</font>'.format(color, text).replace('\n', '<br>'))
+    return ('<font color="{}">{}</font>'.format(
+        color, text).replace('\n', '<br>'))
 
 
 def CriticalError(parent=None, err=None):
@@ -135,8 +136,12 @@ class ChatWindow(QtWidgets.QDialog):
 
     def quit(self, event=None):
         """Exit the program."""
-        TCP_CLIENT.shutdown(socket.SHUT_RDWR)
-        TCP_CLIENT.close()
+        try:
+            TCP_CLIENT.shutdown(socket.SHUT_RDWR)
+            TCP_CLIENT.close()
+        except OSError as err:
+            CriticalError(self, err)
+
         self.close()
         kill_proc_tree(os.getpid())
 
@@ -153,10 +158,13 @@ class ChatWindow(QtWidgets.QDialog):
         elif text == '{quit}':
             self.chatTextField.setText('')
 
+            # Encrypt the text
+            text = cipher.encrypt(text)
+
+            # Send the text
             try:
-                text = cipher.encrypt(text)
                 TCP_CLIENT.send(text)
-            except (OSError, UnicodeDecodeError) as err:
+            except OSError as err:
                 CriticalError(self.window, err)
 
             EXIT_FLAG = True
@@ -165,8 +173,11 @@ class ChatWindow(QtWidgets.QDialog):
         if EXIT_FLAG:
             self.quit()
 
+        # Encrpyt the text
+        text = cipher.encrypt(text)
+
+        # Send the text
         try:
-            text = cipher.encrypt(text)
             TCP_CLIENT.send(text)
         except OSError as err:
             CriticalError(self.window, err)
@@ -196,8 +207,15 @@ class ClientThread(Thread):
     def quit(self):
         """Exit the program."""
         global TCP_CLIENT
-        TCP_CLIENT.shutdown(socket.SHUT_RDWR)
-        TCP_CLIENT.close()
+
+        # Shutdown client connection
+        try:
+            TCP_CLIENT.shutdown(socket.SHUT_RDWR)
+            TCP_CLIENT.close()
+        except OSError as err:
+            CriticalError(self.window, err)
+
+        # Close the window and kill the process tree
         self.window.close()
         kill_proc_tree(os.getpid())
 
@@ -209,11 +227,13 @@ class ClientThread(Thread):
         while not EXIT_FLAG:
             try:
                 data = TCP_CLIENT.recv(BUFSIZ)
-                data = cipher.decrypt(data)
-                data = data.decode('utf-8', 'ignore')
-            except (OSError, UnicodeDecodeError) as err:
+            except OSError as err:
                 CriticalError(self.window, err)
                 EXIT_FLAG = True
+
+            # Decrypyt and decode the data
+            data = cipher.decrypt(data)
+            data = data.decode('utf-8', 'ignore')
 
             # The server closed, set EXIT_FLAG
             if data == 'The lair is closed.':
