@@ -8,27 +8,25 @@ from modules.AESCipher import cipher
 
 class ChatClient():
     """Create a chat client."""
-    def __init__(self, addr, port):
+    def __init__(self, host, port):
         """Create a chat client connection.
 
         Variables of importance:
             exit_flag: Boolean value signaling wether the client should close
-            ADDR: Server's address
-            PORT: Server's listening port
+            ADDR: Tuple value of server's (host, port)
             BUFSIZ: Buffer size for packet sending/recieving
             server: Socket connection to the server
             sel: Default I/O multiplexing selector
         """
         self.exit_flag = False
-        self.ADDR = addr
-        self.PORT = port
-        self.sel = selectors.DefaultSelector()
+        self.ADDR = (host, port)
         self.BUFSIZ = 4096
+        self.sel = selectors.DefaultSelector()
 
         # Connect to the server
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server.connect((self.ADDR, self.PORT))
+            self.server.connect(self.ADDR)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)

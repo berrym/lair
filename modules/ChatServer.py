@@ -25,10 +25,8 @@ class ChatServer():
             exit_flag: Boolean value, when true the server should exit
             clients: Dictionary of client connections
             addresses: Dictionary of addresses for connections
-            MAX_QUEUE: Maximum number of queued connectiions to be established
-            HOST: Server's address, should be set at invocation
-            PORT: Server's listening port, should be set at invocation
-            ADDR: Tuple value of (HOST, PORT)
+            MAX_QUEUE: Maximum number of queued connectiions
+            ADDR: Tuple value of (host, port)
             BUFSIZ: Buffer size for packets being sent/recieved
             server: Socket used for communications
             sel: Default I/O multiplexing selector
@@ -37,9 +35,7 @@ class ChatServer():
         self.clients = {}
         self.addresses = {}
         self.MAX_QUEUE = 5
-        self.HOST = host  # sys.argv[1]
-        self.PORT = port
-        self.ADDR = (self.HOST, self.PORT)
+        self.ADDR = (host, port)
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
 
