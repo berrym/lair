@@ -31,9 +31,9 @@ def main():
     # Create a command line argument parser
     parser = argparse.ArgumentParser(
         description='The Lair Chat App',
-        epilog='Copyright Michael Berry 2019')
+        epilog='Copyright (C) <2019> Michael Berry')
 
-    lair_options = parser.add_argument_group('Lair Options')
+    lair_options = parser.add_argument_group('Lair Arguments')
 
     lair_options.add_argument(
         'session',
