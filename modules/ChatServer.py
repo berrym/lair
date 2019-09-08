@@ -8,11 +8,12 @@ import sys
 import time
 from modules.AESCipher import cipher
 
+
 # Enable logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s [%(threadName)-12.12s]'
-    + '[%(levelname)-5.5s]  %(message)s',
+    format='%(asctime)-15s [%(threadName)-12s]'
+    + '[%(levelname)-8s]  %(message)s',
     handlers=[logging.FileHandler('lair.log'), logging.StreamHandler()])
 
 
@@ -55,12 +56,6 @@ class ChatServer():
 
     def run(self):
         """Run the chat server."""
-        try:
-            self.server.listen(self.MAX_QUEUE)
-        except OSError as err:
-            logging.critical('Error: {}'.format(err))
-            sys.exit(1)
-
         # Start the main thread
         logging.info('Starting main thread.  Waiting for connections.')
         accept_thread = threading.Thread(target=self.accept_connections)
@@ -73,6 +68,13 @@ class ChatServer():
         while not self.exit_flag:
             self.event_loop()
 
+    def event_loop(self):
+        """Select between reading from server socket and standard input."""
+        events = self.sel.select()
+        for key, mask in events:
+            callback = key.data
+            callback(key.fileobj, mask)
+
     def admin_input(self, key, mask):
         """Read from sys.stdin for administrative commands."""
         command = input('')
@@ -83,19 +85,11 @@ class ChatServer():
         else:
             print('Error: unknown command {}'.format(command))
 
-    def event_loop(self):
-        """Select between reading from server socket and standard input."""
-        events = self.sel.select()
-        for key, mask in events:
-            callback = key.data
-            callback(key.fileobj, mask)
-
     def close_server(self):
         """Shutdown the chat server."""
         self.broadcast_to_all('The lair is closed.')
 
         try:
-            self.server.shutdown(socket.SHUT_RDWR)
             self.server.close()
         except OSError as err:
             logging.warn('Error: {}'.format(err))
@@ -127,7 +121,7 @@ class ChatServer():
         self.addresses[client] = client_address
 
         # Start the new thread
-        logging.info('Starting a client thread for {}'.format(client))
+        logging.info('Starting a client thread {}'.format(client))
         threading.Thread(target=self.handle_client, args=(client,)).start()
         logging.info('Client thread started.')
 
@@ -176,6 +170,9 @@ class ChatServer():
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
+        # Potential clients to remove
+        dead_clients = []
+
         # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
@@ -188,7 +185,11 @@ class ChatServer():
                 sock.send(msg)
             except OSError as err:
                 logging.warning('Error: {}'.format(err))
-                self.remove_client(sock, 'Unknown client')
+                dead_clients.append(sock)
+
+        # Remove unresponsive client connections
+        for sock in dead_clients:
+            self.remove_client(sock, 'Dead client {}'.format(sock))
 
     def broadcast_to_client(self, msg, client, prefix=''):
         """Broadcast a message to a single client."""
@@ -232,17 +233,19 @@ class ChatServer():
     def remove_client(self, client, nick):
         """Remove a client connection."""
         logging.info('{}:{} has disconnected.'.format(*self.addresses[client]))
+
+        # Remove client from dictionaries
         del self.addresses[client]
         del self.clients[client]
+
         msg = '{} has left the lair.'.format(nick)
         self.broadcast_to_all(msg, client)
 
         # Make sure client is disconnected
         try:
-            client.shutdown(socket.SHUT_RDWR)
             client.close()
         except OSError as err:
-            logging.warn('Remove client warning: {}'.format(err))
+            logging.warn('remove_client: {}'.format(err))
 
     def tell_who(self, client):
         """Send a list of connected users to a client."""
