@@ -35,17 +35,17 @@ class ChatServer():
         self.exit_flag = False
         self.clients = {}
         self.addresses = {}
-        self.MAX_QUEUE = 5
-        self.ADDR = (host, port)
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
+        MAX_QUEUE = 5
+        ADDR = (host, port)
 
         # Create the server socket
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.server.bind(self.ADDR)
-            self.server.listen(self.MAX_QUEUE)
+            self.server.bind(ADDR)
+            self.server.listen(MAX_QUEUE)
         except OSError as err:
             logging.critical('Error: {}'.format(err))
             sys.exit(1)
