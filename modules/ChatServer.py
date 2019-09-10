@@ -37,7 +37,6 @@ class ChatServer():
         self.clients = {}
         self.addresses = {}
         self.threads = {}
-        self.threads = {}
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
         MAX_QUEUE = 5
