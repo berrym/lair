@@ -142,7 +142,7 @@ class ChatServer():
         ct = threading.Thread(target=self.handle_client, args=(client,))
         self.threads[client] = ct
         ct.start()
-        logging.info('Client thread started.')
+        logging.info('Client thread {} started'.format(client))
 
     def handle_client(self, client):
         """Handles a single client connection."""
@@ -183,6 +183,10 @@ class ChatServer():
             if nick in self.clients.values():
                 msg = '{} is already taken, choose another name.'.format(
                     nick)
+                self.broadcast_to_client(msg, client)
+            elif not nick.isalnum() or len(nick) > 8:
+                msg = 'Your name must be alphanumeric only, e.g. TheEvil1\n'
+                msg = msg + 'and no longer than 8 characters.'
                 self.broadcast_to_client(msg, client)
             else:
                 logging.info('{} logged in as {}'.format(client, nick))
