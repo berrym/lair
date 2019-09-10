@@ -140,7 +140,7 @@ class ChatServer():
         # Start the new thread
         logging.info('Starting a client thread {}'.format(client))
         ct = threading.Thread(target=self.handle_client, args=(client,))
-        self.threads[client] =  ct
+        self.threads[client] = ct
         ct.start()
         logging.info('Client thread started.')
 
@@ -175,6 +175,7 @@ class ChatServer():
                 return False
 
             if not nick:
+                self.remove_client(client, 'Dead client {}'.format(client))
                 return False
 
             nick = cipher.decrypt(nick)
@@ -254,10 +255,16 @@ class ChatServer():
         logging.info('{}:{} has disconnected.'.format(*self.addresses[client]))
 
         # Remove client from dictionaries
-        del self.addresses[client]
-        del self.clients[client]
-        del self.threads[client]
+        if client in self.addresses:
+            del self.addresses[client]
 
+        if client in self.clients:
+            del self.clients[client]
+
+        if client in self.threads:
+            del self.threads[client]
+
+        # Broadcast departure
         msg = '{} has left the lair.'.format(nick)
         self.broadcast_to_all(msg, client)
 
