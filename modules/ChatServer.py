@@ -228,7 +228,7 @@ class ChatServer():
                 continue
 
             try:
-                sock.send(msg)
+                sock.sendall(msg)
             except OSError as err:
                 logging.warning('Error: {}'.format(err))
                 dead_clients.append(sock)
@@ -245,7 +245,7 @@ class ChatServer():
 
         # Send message
         try:
-            client.send(msg)
+            client.sendall(msg)
         except OSError as err:
             logging.warning('Error: {}'.format(err))
             self.remove_client(client, 'Unknown visitor')
