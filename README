@@ -5,22 +5,31 @@ The Lair
 DESCRIPTION
 
 This is a small chat application written in Python 3.
-It consists of a server and two client (one console, the other a simple Qt
-Gui) scripts.  It uses the selectors module on sockets and sys.stdin
-which works fine on *NIX like systems but not as far I as know on Windows.
-This is unlikely to change because it is a toy program and I really dont
-care if it works on Windows. It uses an AES CBC symmetrical encryption
-scheme.
 
 REQUIREMENTS
 
 A recent version of Python 3.  Tested with 3.6+
 
-PyCryptoDomex: pip install pycryptodomex
+PyCryptodomex: pip install pycryptodomex
 
-For the Gui
+For the GUI
 
 PyQt5: many ways to install including pip
 
 psutil: pip install psutil
 
+BASIC USAGE
+
+There is a script lair.py in the top level of the repo
+that can launch both the server and client component of
+the app.  There is also a GUI client script.
+
+Examples:
+
+python3 lair.py --help
+
+python3 lair.py server localhost 1234
+
+python3 lair.py client localhost 1234
+
+python3 lair_client-qt5.py
