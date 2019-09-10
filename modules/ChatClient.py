@@ -12,21 +12,27 @@ class ChatClient():
         """Create a chat client connection.
 
         Variables of importance:
-            exit_flag: Boolean value signaling wether the client should close
+            self.exit_flag: Boolean value, if true the client should close
+            self.BUFSIZ: Buffer size for packet sending/recieving
+            self.server: Socket connection to the server
+            self.sel: Default I/O multiplexing selector
             ADDR: Tuple value of server's (host, port)
-            BUFSIZ: Buffer size for packet sending/recieving
-            server: Socket connection to the server
-            sel: Default I/O multiplexing selector
+
+        Class Methods:
+            run: Run a client session
+            event_loop: Select between registered events
+            read_server: Read messages from the chat server
+            user_input: Read input from the user
         """
         self.exit_flag = False
-        self.ADDR = (host, port)
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
+        ADDR = (host, port)
 
         # Connect to the server
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server.connect(self.ADDR)
+            self.server.connect(ADDR)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
@@ -47,8 +53,15 @@ class ChatClient():
         self.server.shutdown(socket.SHUT_RDWR)
         self.server.close()
 
+    def event_loop(self):
+        """Select between reading from server socket and standard input."""
+        events = self.sel.select()
+        for key, mask in events:
+            callback = key.data
+            callback(key.fileobj, mask)
+
     def read_server(self, key, mask):
-        """Read data from the server."""
+        """Read messages from the chat server."""
         try:
             msg = self.server.recv(self.BUFSIZ)
         except OSError as err:
@@ -79,7 +92,7 @@ class ChatClient():
 
         # Send the message
         try:
-            self.server.send(msg)
+            self.server.sendall(msg)
         except OSError as err:
             print('Error: {}'.format(err))
             sys.exit(1)
@@ -91,10 +104,3 @@ class ChatClient():
         if msg.decode('utf-8', 'ignore') == '{quit}':
             self.exit_flag = True
             return
-
-    def event_loop(self):
-        """Select between reading from server socket and standard input."""
-        events = self.sel.select()
-        for key, mask in events:
-            callback = key.data
-            callback(key.fileobj, mask)
