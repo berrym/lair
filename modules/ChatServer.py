@@ -23,15 +23,30 @@ class ChatServer():
         """Initialize the chat server.
 
         Important variables set:
-            exit_flag: Boolean value, when true the server should exit
-            clients: Dictionary of client connections
-            addresses: Dictionary of addresses for connections
-            threads: Dictionary of client threads
+            self.exit_flag: Boolean value, when true the server should exit
+            self.clients: Dictionary of client connections
+            self.addresses: Dictionary of addresses for connections
+            self.threads: Dictionary of client threads
             MAX_QUEUE: Maximum number of queued connectiions
             ADDR: Tuple value of (host, port)
-            BUFSIZ: Buffer size for packets being sent/recieved
-            server: Socket used for communications
-            sel: Default I/O multiplexing selector
+            self.BUFSIZ: Buffer size for packets being sent/recieved
+            self.server: Socket used for communications
+            self.sel: Default I/O multiplexing selector
+
+        Class Methods:
+            run: Run the chat server
+            event_loop: Select between registered events
+            admin_input: Accept commands from administrator
+            close_server: Shutdown the chat server
+            who: Print a list of connected clients
+            spawn_client: Spawn a new client thread
+            handle_client: Handle client connection
+            get_nick: Get a unique nickname
+            broadcast_to_all: Broadcast a message to all clients
+            broadcast_to_client: Broadcast a message to a client
+            client_thread_loop: Send/Recieve loop for client
+            remove_client: Remove a client connection
+            tell_who: Send a list of all connected users to a client
         """
         self.exit_flag = False
         self.clients = {}
@@ -60,22 +75,18 @@ class ChatServer():
         """Run the chat server."""
         # Start the main thread
         logging.info('Starting main thread.  Waiting for connections.')
-        accept_thread = threading.Thread(target=self.accept_connections)
+        accept_thread = threading.Thread(target=self.event_loop)
         accept_thread.start()
         accept_thread.join()
         logging.info('Main thread exited.')
 
-    def accept_connections(self):
-        """Accept incoming client connections."""
-        while not self.exit_flag:
-            self.event_loop()
-
     def event_loop(self):
         """Select between reading from server socket and standard input."""
-        events = self.sel.select()
-        for key, mask in events:
-            callback = key.data
-            callback(key.fileobj, mask)
+        while not self.exit_flag:
+            events = self.sel.select()
+            for key, mask in events:
+                callback = key.data
+                callback(key.fileobj, mask)
 
     def admin_input(self, key, mask):
         """Read from sys.stdin for administrative commands."""
