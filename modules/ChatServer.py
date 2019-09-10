@@ -26,6 +26,7 @@ class ChatServer():
             exit_flag: Boolean value, when true the server should exit
             clients: Dictionary of client connections
             addresses: Dictionary of addresses for connections
+            threads: Dictionary of client threads
             MAX_QUEUE: Maximum number of queued connectiions
             ADDR: Tuple value of (host, port)
             BUFSIZ: Buffer size for packets being sent/recieved
@@ -35,6 +36,8 @@ class ChatServer():
         self.exit_flag = False
         self.clients = {}
         self.addresses = {}
+        self.threads = {}
+        self.threads = {}
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
         MAX_QUEUE = 5
@@ -87,16 +90,31 @@ class ChatServer():
 
     def close_server(self):
         """Shutdown the chat server."""
+        # Create a list of client threads to make sure they've finsihed
+        threads = []
+        for t in self.threads.values():
+            threads.append(t)
+
+        # Say goobye
         self.broadcast_to_all('The lair is closed.')
 
+        # Close the server
         try:
             self.server.close()
         except OSError as err:
             logging.warn('Error: {}'.format(err))
         finally:
+            # Clean up selector
             self.sel.unregister(self.server)
             self.sel.unregister(sys.stdin)
             self.sel.close()
+
+            # Make sure all threads have finished
+            for t in threads:
+                if t:
+                    t.join()
+
+            # Set the exit flag
             self.exit_flag = True
 
     def who(self):
@@ -122,7 +140,9 @@ class ChatServer():
 
         # Start the new thread
         logging.info('Starting a client thread {}'.format(client))
-        threading.Thread(target=self.handle_client, args=(client,)).start()
+        ct = threading.Thread(target=self.handle_client, args=(client,))
+        self.threads[client] =  ct
+        ct.start()
         logging.info('Client thread started.')
 
     def handle_client(self, client):
@@ -237,6 +257,7 @@ class ChatServer():
         # Remove client from dictionaries
         del self.addresses[client]
         del self.clients[client]
+        del self.threads[client]
 
         msg = '{} has left the lair.'.format(nick)
         self.broadcast_to_all(msg, client)
