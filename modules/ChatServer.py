@@ -201,6 +201,17 @@ class ChatServer():
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
 
+        # Check message length, if too long inform client
+        if len(msg) >= self.BUFSIZ:
+            msg = 'Message was too long to send.'
+            try:
+                self.broadcast_to_client(msg, omit_client)
+            except OSError as err:
+                logging.warning('Error: {}'.format(err))
+            finally:
+                return
+
+        # Broadcast message
         for sock in self.clients:
             if omit_client and sock == omit_client:
                 continue
@@ -221,6 +232,7 @@ class ChatServer():
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
 
+        # Send message
         try:
             client.send(msg)
         except OSError as err:
