@@ -224,9 +224,11 @@ class ChatServer():
 
         # Broadcast message
         for sock in self.clients:
+            # Don't send a client it's own message
             if omit_client and sock == omit_client:
                 continue
 
+            # Send message
             try:
                 sock.sendall(msg)
             except OSError as err:
@@ -289,6 +291,9 @@ class ChatServer():
             del self.clients[client]
 
         if client in self.threads:
+            if self.threads[client].is_alive():
+                logging.info('{} thread is still alive, deleting ref'.format(
+                    client))
             del self.threads[client]
 
         # Broadcast departure
