@@ -4,7 +4,7 @@
 
 Simple Qt client to The Lair chat server.
 
-Copyright (C) <2019>  <Michael Berry>
+Copyright (C) 2019  <Michael Berry>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -44,8 +44,7 @@ def kill_proc_tree(pid):
 
 def formatText(color='black', text=''):
     """Perform some basic formatting on text."""
-    return ('<font color="{}">{}</font>'.format(
-        color, text).replace('\n', '<br>'))
+    return f'<font color="{color}">{text}</font>'.replace('\n', '<br>')
 
 
 def CriticalError(parent=None, err=None):

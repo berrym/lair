@@ -24,9 +24,9 @@ class ChatServer():
 
         Important variables set:
             self.exit_flag: Boolean value, when true the server should exit
-            self.clients: Dictionary of client connections
-            self.addresses: Dictionary of addresses for connections
-            self.threads: Dictionary of client threads
+            self.nicks: Dictionary of socket->nick
+            self.addrs: Dictionary of socket->address
+            self.threads: Dictionary of client threads, socket->thread
             MAX_QUEUE: Maximum number of queued connectiions
             ADDR: Tuple value of (host, port)
             self.BUFSIZ: Buffer size for packets being sent/recieved
@@ -49,9 +49,8 @@ class ChatServer():
             tell_who: Send a list of all connected users to a client
         """
         self.exit_flag = False
-        self.clients = {}
-        self.addresses = {}
-        self.threads = {}
+        self.nicks = {}
+        self.addrs = {}
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
         MAX_QUEUE = 5
@@ -64,7 +63,7 @@ class ChatServer():
             self.server.bind(ADDR)
             self.server.listen(MAX_QUEUE)
         except OSError as err:
-            logging.critical('Error: {}'.format(err))
+            logging.critical(f'Error: {err}')
             sys.exit(1)
 
         # Register some select events
@@ -74,7 +73,7 @@ class ChatServer():
     def run(self):
         """Run the chat server."""
         # Start the main thread
-        logging.info('Starting main thread.  Waiting for connections.')
+        logging.info('Starting main thread, waiting for connections')
         accept_thread = threading.Thread(target=self.event_loop)
         accept_thread.start()
         accept_thread.join()
@@ -96,15 +95,10 @@ class ChatServer():
         elif command == 'who':
             self.who()
         else:
-            print('Error: unknown command {}'.format(command))
+            print(f'Error: unknown command {command}')
 
     def close_server(self):
         """Shutdown the chat server."""
-        # Create a list of client threads to make sure they've finsihed
-        threads = []
-        for t in self.threads.values():
-            threads.append(t)
-
         # Say goobye
         self.broadcast_to_all('The lair is closed.')
 
@@ -112,17 +106,12 @@ class ChatServer():
         try:
             self.server.close()
         except OSError as err:
-            logging.warn('Error: {}'.format(err))
+            logging.warn(f'Error: {err}')
         finally:
             # Clean up selector
             self.sel.unregister(self.server)
             self.sel.unregister(sys.stdin)
             self.sel.close()
-
-            # Make sure all threads have finished
-            for t in threads:
-                if t:
-                    t.join()
 
             # Set the exit flag
             self.exit_flag = True
@@ -130,77 +119,73 @@ class ChatServer():
     def who(self):
         """Print a list of all connected clients."""
         print('{:*^60}'.format(' The lair dwellers! '))
-        for nick, addr in zip(self.clients.values(),
-                              self.addresses.values()):
-            print('{} at {}:{}'.format(nick, *addr))
+        for nick, addr in zip(self.nicks.values(), self.addrs.values()):
+            print(f'{nick} at {addr}')
 
-    def spawn_client(self, client, mask):
+    def spawn_client(self, key, mask):
         """Spawn a new client thread."""
         try:
-            client, client_address = self.server.accept()
+            sock, addr = self.server.accept()
         except OSError as err:
-            print('Error: {}'.format(err))
+            print(f'Error: {err}')
 
-        logging.info('{}:{} has connected.'.format(*client_address))
+        logging.info(f'{addr[0]}:{addr[1]} has connected')
 
         # Say hello
         msg = 'You have entered the lair!\nEnter your name!'
-        self.broadcast_to_client(msg, client)
-        self.addresses[client] = client_address
+        self.broadcast_to_client(msg, sock)
+        self.addrs[sock] = addr
 
         # Start the new thread
-        logging.info('Starting a client thread {}'.format(client))
-        ct = threading.Thread(target=self.handle_client, args=(client,))
-        self.threads[client] = ct
-        ct.start()
-        logging.info('Client thread {} started'.format(client))
+        logging.info(f'Starting a client thread for {addr[0]}:{addr[1]}')
+        threading.Thread(target=self.handle_client, args=(sock,)).start()
+        logging.info(f'Client thread for {addr[0]}:{addr[1]} started')
 
-    def handle_client(self, client):
+    def handle_client(self, sock):
         """Handles a single client connection."""
         # Get a unique nickname from the client
-        nick = self.get_nick(client)
+        nick = self.get_nick(sock)
         if nick:
-            self.clients[client] = nick
+            self.nicks[sock] = nick
         else:
             return
 
         # Welcome the new client to the lair
-        msg = 'Welcome to the Lair {}! Type {{help}} for commands.'.format(
-            nick)
-        self.broadcast_to_client(msg, client)
+        msg = f'Welcome to the Lair {nick}! Type {{help}} for commands.'
+        self.broadcast_to_client(msg, sock)
 
         # Inform other clients that a new one has connected
-        msg = '{} has entered the lair!'.format(nick)
-        self.broadcast_to_all(msg, client)
+        msg = f'{nick} has entered the lair!'
+        self.broadcast_to_all(msg, sock)
 
         # Start sending/recieving messages with client thread
-        self.client_thread_loop(client, nick)
+        self.client_thread_loop(sock, nick)
 
-    def get_nick(self, client):
+    def get_nick(self, sock):
         """Get a unique nickname from the client."""
         while True:
             try:
-                nick = client.recv(self.BUFSIZ)
+                nick = sock.recv(self.BUFSIZ)
             except OSError as err:
-                logging.warning('Error: {}'.format(err))
+                logging.warning(f'Error: {err}')
                 return False
 
             if not nick:
-                self.remove_client(client, 'Dead client {}'.format(client))
+                self.remove_client(sock, f'Bad client socket {sock}')
                 return False
 
             nick = cipher.decrypt(nick)
             nick = nick.decode('utf-8', 'ignore')
-            if nick in self.clients.values():
-                msg = '{} is already taken, choose another name.'.format(
-                    nick)
-                self.broadcast_to_client(msg, client)
+            if nick in self.nicks.values():
+                msg = f'{nick} is already taken, choose another name.'
+                self.broadcast_to_client(msg, sock)
             elif not nick.isalnum() or len(nick) > 8:
-                msg = 'Your name must be alphanumeric only, e.g. TheEvil1\n'
+                msg = 'Your name must be alphanumeric only, e.g. The3vil1\n'
                 msg = msg + 'and no longer than 8 characters.'
-                self.broadcast_to_client(msg, client)
+                self.broadcast_to_client(msg, sock)
             else:
-                logging.info('{} logged in as {}'.format(client, nick))
+                ip, port = self.addrs[sock]
+                logging.info(f'{ip}:{port} logged in as {nick}')
                 return nick
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
@@ -215,15 +200,11 @@ class ChatServer():
         # Check message length, if too long inform client
         if len(msg) >= self.BUFSIZ:
             msg = 'Message was too long to send.'
-            try:
-                self.broadcast_to_client(msg, omit_client)
-            except OSError as err:
-                logging.warning('Error: {}'.format(err))
-            finally:
-                return
+            self.broadcast_to_client(msg, omit_client)
+            return
 
         # Broadcast message
-        for sock in self.clients:
+        for sock in self.addrs:
             # Don't send a client it's own message
             if omit_client and sock == omit_client:
                 continue
@@ -232,14 +213,14 @@ class ChatServer():
             try:
                 sock.sendall(msg)
             except OSError as err:
-                logging.warning('Error: {}'.format(err))
+                logging.warning(f'Error: {err}')
                 dead_clients.append(sock)
 
         # Remove unresponsive client connections
         for sock in dead_clients:
-            self.remove_client(sock, 'Dead client {}'.format(sock))
+            self.remove_client(sock, f'Dead client {sock}')
 
-    def broadcast_to_client(self, msg, client, prefix=''):
+    def broadcast_to_client(self, msg, sock, prefix=''):
         """Broadcast a message to a single client."""
         # Create the encrypted message
         msg = str(prefix) + str(msg)
@@ -247,24 +228,23 @@ class ChatServer():
 
         # Send message
         try:
-            client.sendall(msg)
+            sock.sendall(msg)
         except OSError as err:
-            logging.warning('Error: {}'.format(err))
-            self.remove_client(client, 'Unknown visitor')
+            logging.warning(f'Error: {err}')
+            self.remove_client(sock, 'Unknown')
 
-    def client_thread_loop(self, client, nick):
+    def client_thread_loop(self, sock, nick):
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
-                msg = client.recv(self.BUFSIZ)
+                msg = sock.recv(self.BUFSIZ)
             except OSError as err:
-                logging.warning('Error: {}'.format(err))
+                logging.warning(f'Error: {err}')
                 break
 
             if not msg:
-                logging.warn('Error: unable to recvieve from {}'.format(
-                    nick))
-                self.remove_client(client, nick)
+                logging.warn(f'Error: unable to recvieve from {nick}')
+                self.remove_client(sock, nick)
                 break
 
             # Decrypt the message
@@ -272,44 +252,37 @@ class ChatServer():
             msg = msg.decode('utf-8', 'ignore')
 
             if msg == '{quit}':
-                self.remove_client(client, nick)
+                self.remove_client(sock, nick)
                 break
             elif msg == '{who}':
-                self.tell_who(client)
+                self.tell_who(sock)
             else:
-                self.broadcast_to_all(msg, client, nick + ': ')
+                self.broadcast_to_all(msg, sock, nick + ': ')
 
-    def remove_client(self, client, nick):
+    def remove_client(self, sock, nick):
         """Remove a client connection."""
-        logging.info('{}:{} has disconnected.'.format(*self.addresses[client]))
+        logging.info(f'{self.addrs[sock]} has disconnected.')
 
         # Remove client from dictionaries
-        if client in self.addresses:
-            del self.addresses[client]
+        if sock in self.addrs:
+            del self.addrs[sock]
 
-        if client in self.clients:
-            del self.clients[client]
-
-        if client in self.threads:
-            if self.threads[client].is_alive():
-                logging.info('{} thread is still alive, deleting ref'.format(
-                    client))
-            del self.threads[client]
+        if sock in self.nicks:
+            del self.nicks[sock]
 
         # Broadcast departure
-        msg = '{} has left the lair.'.format(nick)
-        self.broadcast_to_all(msg, client)
+        msg = f'{nick} has left the lair.'
+        self.broadcast_to_all(msg, sock)
 
         # Make sure client is disconnected
         try:
-            client.close()
+            sock.close()
         except OSError as err:
-            logging.warn('remove_client: {}'.format(err))
+            logging.warn(f'remove_client: {err}')
 
-    def tell_who(self, client):
+    def tell_who(self, sock):
         """Send a list of connected users to a client."""
-        for nick, addr in zip(self.clients.values(),
-                              self.addresses.values()):
-            msg = '{} at {}\n'.format(nick, addr[0])
-            self.broadcast_to_client(msg, client)
+        for nick, addr in zip(self.nicks.values(), self.addrs.values()):
+            msg = f'{nick} at {addr[0]}\n'
+            self.broadcast_to_client(msg, sock)
             time.sleep(0.1)

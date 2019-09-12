@@ -34,7 +34,7 @@ class ChatClient():
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.connect(ADDR)
         except OSError as err:
-            print('Error: {}'.format(err))
+            print(f'Error: {err}')
             sys.exit(1)
 
         # Register some select events
@@ -65,7 +65,7 @@ class ChatClient():
         try:
             msg = self.server.recv(self.BUFSIZ)
         except OSError as err:
-            print('Error: {}'.format(err))
+            print(f'Error: {err}')
             return
 
         # Print the message
@@ -94,7 +94,7 @@ class ChatClient():
         try:
             self.server.sendall(msg)
         except OSError as err:
-            print('Error: {}'.format(err))
+            print('Error: {err}')
             sys.exit(1)
 
         # Decrypt the message

@@ -31,7 +31,7 @@ def main():
     # Create a command line argument parser
     parser = argparse.ArgumentParser(
         description='The Lair Chat App',
-        epilog='Copyright (C) <2019> Michael Berry')
+        epilog='Copyright (C) 2019 Michael Berry')
 
     lair_options = parser.add_argument_group('Lair Arguments')
 
@@ -58,8 +58,7 @@ def main():
     elif args.session == 'client':
         ChatClient(args.address, args.port).run()
     else:
-        print('{}: error: session must be either server or client'.format(
-            sys.argv[0]))
+        print(f'{sys.argv[0]}: error: session must be either server or client')
 
 
 # __main__? Program entry point
