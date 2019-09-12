@@ -1,4 +1,8 @@
-"""Single threaded cli chat client for The Lair chat server application."""
+"""ChatClient.py
+
+The Lair: Client class for The Lair chat application.
+"""
+
 
 import socket
 import selectors
@@ -33,8 +37,8 @@ class ChatClient():
         try:
             self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server.connect(ADDR)
-        except OSError as err:
-            print(f'Error: {err}')
+        except OSError as e:
+            print(f'Error: {e}')
             sys.exit(1)
 
         # Register some select events
@@ -64,8 +68,8 @@ class ChatClient():
         """Read messages from the chat server."""
         try:
             msg = self.server.recv(self.BUFSIZ)
-        except OSError as err:
-            print(f'Error: {err}')
+        except OSError as e:
+            print(f'Error: {e}')
             return
 
         # Print the message
@@ -93,8 +97,8 @@ class ChatClient():
         # Send the message
         try:
             self.server.sendall(msg)
-        except OSError as err:
-            print('Error: {err}')
+        except OSError as e:
+            print(f'Error: {e}')
             sys.exit(1)
 
         # Decrypt the message

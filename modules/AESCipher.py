@@ -1,4 +1,7 @@
-"""AES Cipher class for encryption and decryption."""
+"""AESCipher.py
+
+AES Cipher class for encrypting and decrypting string data.
+"""
 
 import base64
 import hashlib

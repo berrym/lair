@@ -1,4 +1,8 @@
-"""The Lair: Server for multithreaded (asynchronous) chat application."""
+"""ChatServer.py
+
+The Lair: Server class for multithreaded (asynchronous) chat application.
+"""
+
 
 import logging
 import threading
@@ -27,11 +31,11 @@ class ChatServer():
             self.nicks: Dictionary of socket->nick
             self.addrs: Dictionary of socket->address
             self.threads: Dictionary of client threads, socket->thread
-            MAX_QUEUE: Maximum number of queued connectiions
-            ADDR: Tuple value of (host, port)
             self.BUFSIZ: Buffer size for packets being sent/recieved
             self.server: Socket used for communications
             self.sel: Default I/O multiplexing selector
+            ADDR: Tuple value of (host, port)
+            MAX_QUEUE: Maximum number of queued connectiions
 
         Class Methods:
             run: Run the chat server
@@ -62,8 +66,8 @@ class ChatServer():
             self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.server.bind(ADDR)
             self.server.listen(MAX_QUEUE)
-        except OSError as err:
-            logging.critical(f'Error: {err}')
+        except OSError as e:
+            logging.critical(f'Error: {e}')
             sys.exit(1)
 
         # Register some select events
@@ -105,8 +109,8 @@ class ChatServer():
         # Close the server
         try:
             self.server.close()
-        except OSError as err:
-            logging.warn(f'Error: {err}')
+        except OSError as e:
+            logging.warn(f'Error: {e}')
         finally:
             # Clean up selector
             self.sel.unregister(self.server)
@@ -126,8 +130,8 @@ class ChatServer():
         """Spawn a new client thread."""
         try:
             sock, addr = self.server.accept()
-        except OSError as err:
-            print(f'Error: {err}')
+        except OSError as e:
+            print(f'Error: {e}')
 
         logging.info(f'{addr[0]}:{addr[1]} has connected')
 
@@ -166,8 +170,8 @@ class ChatServer():
         while True:
             try:
                 nick = sock.recv(self.BUFSIZ)
-            except OSError as err:
-                logging.warning(f'Error: {err}')
+            except OSError as e:
+                logging.warning(f'Error: {e}')
                 return False
 
             if not nick:
@@ -212,8 +216,8 @@ class ChatServer():
             # Send message
             try:
                 sock.sendall(msg)
-            except OSError as err:
-                logging.warning(f'Error: {err}')
+            except OSError as e:
+                logging.warning(f'Error: {e}')
                 dead_clients.append(sock)
 
         # Remove unresponsive client connections
@@ -229,8 +233,8 @@ class ChatServer():
         # Send message
         try:
             sock.sendall(msg)
-        except OSError as err:
-            logging.warning(f'Error: {err}')
+        except OSError as e:
+            logging.warning(f'Error: {e}')
             self.remove_client(sock, 'Unknown')
 
     def client_thread_loop(self, sock, nick):
@@ -238,8 +242,8 @@ class ChatServer():
         while not self.exit_flag:
             try:
                 msg = sock.recv(self.BUFSIZ)
-            except OSError as err:
-                logging.warning(f'Error: {err}')
+            except OSError as e:
+                logging.warning(f'Error: {e}')
                 break
 
             if not msg:
@@ -261,7 +265,8 @@ class ChatServer():
 
     def remove_client(self, sock, nick):
         """Remove a client connection."""
-        logging.info(f'{self.addrs[sock]} has disconnected.')
+        addr, port = self.addrs[sock]
+        logging.info(f'{addr}:{port} has disconnected.')
 
         # Remove client from dictionaries
         if sock in self.addrs:
@@ -277,8 +282,8 @@ class ChatServer():
         # Make sure client is disconnected
         try:
             sock.close()
-        except OSError as err:
-            logging.warn(f'remove_client: {err}')
+        except OSError as e:
+            logging.warn(f'remove_client: {e}')
 
     def tell_who(self, sock):
         """Send a list of connected users to a client."""

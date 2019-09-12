@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+
 """lair_client-qt.py
 
 Simple Qt client to The Lair chat server.
 
-Copyright (C) 2019  <Michael Berry>
+Copyright (C) 2019 Michael Berry
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 
 import os
 import sys
@@ -138,7 +140,7 @@ class ChatWindow(QtWidgets.QDialog):
         try:
             TCP_CLIENT.shutdown(socket.SHUT_RDWR)
             TCP_CLIENT.close()
-        except OSError as err:
+        except OSError as e:
             CriticalError(self, err)
 
         self.close()
@@ -163,7 +165,7 @@ class ChatWindow(QtWidgets.QDialog):
             # Send the text
             try:
                 TCP_CLIENT.send(text)
-            except OSError as err:
+            except OSError as e:
                 CriticalError(self.window, err)
 
             EXIT_FLAG = True
@@ -178,7 +180,7 @@ class ChatWindow(QtWidgets.QDialog):
         # Send the text
         try:
             TCP_CLIENT.send(text)
-        except OSError as err:
+        except OSError as e:
             CriticalError(self.window, err)
             self.quit()
 
@@ -211,7 +213,7 @@ class ClientThread(Thread):
         try:
             TCP_CLIENT.shutdown(socket.SHUT_RDWR)
             TCP_CLIENT.close()
-        except OSError as err:
+        except OSError as e:
             CriticalError(self.window, err)
 
         # Close the window and kill the process tree
@@ -226,7 +228,7 @@ class ClientThread(Thread):
         while not EXIT_FLAG:
             try:
                 data = TCP_CLIENT.recv(BUFSIZ)
-            except OSError as err:
+            except OSError as e:
                 CriticalError(self.window, err)
                 EXIT_FLAG = True
 
@@ -249,7 +251,7 @@ class ClientThread(Thread):
 
         try:
             TCP_CLIENT.connect((ADDR, PORT))
-        except OSError as err:
+        except OSError as e:
             CriticalError(self.window, err)
             EXIT_FLAG = True
 
