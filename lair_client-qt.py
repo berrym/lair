@@ -141,7 +141,7 @@ class ChatWindow(QtWidgets.QDialog):
             TCP_CLIENT.shutdown(socket.SHUT_RDWR)
             TCP_CLIENT.close()
         except OSError as e:
-            CriticalError(self, err)
+            CriticalError(self, e)
 
         self.close()
         kill_proc_tree(os.getpid())
@@ -166,7 +166,7 @@ class ChatWindow(QtWidgets.QDialog):
             try:
                 TCP_CLIENT.send(text)
             except OSError as e:
-                CriticalError(self.window, err)
+                CriticalError(self.window, e)
 
             EXIT_FLAG = True
 
@@ -181,7 +181,7 @@ class ChatWindow(QtWidgets.QDialog):
         try:
             TCP_CLIENT.send(text)
         except OSError as e:
-            CriticalError(self.window, err)
+            CriticalError(self.window, e)
             self.quit()
 
         # Update UI
@@ -214,7 +214,7 @@ class ClientThread(Thread):
             TCP_CLIENT.shutdown(socket.SHUT_RDWR)
             TCP_CLIENT.close()
         except OSError as e:
-            CriticalError(self.window, err)
+            CriticalError(self.window, e)
 
         # Close the window and kill the process tree
         self.window.close()
@@ -229,7 +229,7 @@ class ClientThread(Thread):
             try:
                 data = TCP_CLIENT.recv(BUFSIZ)
             except OSError as e:
-                CriticalError(self.window, err)
+                CriticalError(self.window, e)
                 EXIT_FLAG = True
 
             # Decrypyt and decode the data
@@ -252,7 +252,7 @@ class ClientThread(Thread):
         try:
             TCP_CLIENT.connect((ADDR, PORT))
         except OSError as e:
-            CriticalError(self.window, err)
+            CriticalError(self.window, e)
             EXIT_FLAG = True
 
         # recieve loop
