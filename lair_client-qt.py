@@ -51,6 +51,7 @@ def CriticalError(parent=None, err=None):
 
 class ConnectionDialog(QtWidgets.QDialog):
     """Get Server Options."""
+
     def __init__(self):
         """Create a simple dialog.
 
@@ -87,6 +88,7 @@ class ConnectionDialog(QtWidgets.QDialog):
 
 class ChatWindow(QtWidgets.QDialog):
     """Graphical chat window."""
+
     def __init__(self):
         """Initialize the chat window.
 
@@ -183,6 +185,7 @@ class ChatWindow(QtWidgets.QDialog):
 
 class ClientThread(Thread):
     """Create a client thread for networking communications."""
+
     def __init__(self, window):
         """Initialize the thread."""
         Thread.__init__(self)
@@ -224,7 +227,7 @@ class ClientThread(Thread):
 
             # The server closed, set EXIT_FLAG
             if data == 'The lair is closed.':
-                EXIT_FLAG = True
+                self.quit()
 
             # add recieved text to chat field
             self.window.chat.append(formatText(color='blue', text=data))
