@@ -4,21 +4,24 @@ The Lair: Server class for multithreaded (asynchronous) chat application.
 """
 
 
+import os
+import sys
+import time
 import logging
 import threading
 import selectors
 import socket
-import sys
-import time
 from modules.AESCipher import cipher
 
+
+logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 
 # Enable logging
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)-15s [%(threadName)-12s]'
     + '[%(levelname)-8s]  %(message)s',
-    handlers=[logging.FileHandler('lair.log'), logging.StreamHandler()])
+    handlers=[logging.FileHandler(logfilename), logging.StreamHandler()])
 
 
 class ChatServer():
