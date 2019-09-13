@@ -267,10 +267,10 @@ class ChatServer():
         logging.info(f'{addr}:{port} has disconnected.')
 
         # Remove client from dictionaries
-        if sock in self.addrs:
+        if sock in self.addrs.copy():
             del self.addrs[sock]
 
-        if sock in self.nicks:
+        if sock in self.nicks.copy():
             del self.nicks[sock]
 
         # Broadcast departure
