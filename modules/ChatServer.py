@@ -90,13 +90,12 @@ class ChatServer():
         except KeyboardInterrupt:
             self.close_server()
 
-        logging.info('Main thread exited.')
+        logging.info('Main thread exited')
 
     def event_loop(self):
         """Select between reading from server socket and standard input."""
         while not self.exit_flag:
-            ct = threading.currentThread()
-            logging.info(f'Executing event loop in {ct.name}')
+            logging.info('Executing event loop')
 
             events = self.sel.select()
             for key, mask in events:
@@ -145,7 +144,7 @@ class ChatServer():
         except OSError as e:
             print(f'Error: {e}')
 
-        logging.info(f'{addr[0]}:{addr[1]} has connected')
+        logging.info(f'{addr} has connected')
 
         # Say hello
         msg = 'You have entered the lair!\nEnter your name!'
@@ -202,8 +201,7 @@ class ChatServer():
                 msg = msg + 'and no longer than 8 characters.'
                 self.broadcast_to_client(msg, sock)
             else:
-                ip, port = self.addrs[sock]
-                logging.info(f'{ip}:{port} logged in as {nick}')
+                logging.info(f'{self.addrs[sock]} logged in as {nick}')
                 return nick
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
@@ -258,7 +256,7 @@ class ChatServer():
             try:
                 msg = sock.recv(self.BUFSIZ)
             except OSError as e:
-                logging.warning(f'Error: {e}')
+                logging.warning(f'Receive error: {e}')
                 self.remove_client(sock, nick)
                 return
 
@@ -279,8 +277,7 @@ class ChatServer():
 
     def remove_client(self, sock, nick):
         """Remove a client connection."""
-        addr, port = self.addrs[sock]
-        logging.info(f'{addr}:{port} has disconnected.')
+        logging.info(f'{self.addrs[sock]} has disconnected.')
 
         # Remove client from dictionaries
         if sock in self.addrs.copy():

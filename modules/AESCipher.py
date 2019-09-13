@@ -12,6 +12,7 @@ from Cryptodome.Random import get_random_bytes
 from Cryptodome.Cipher import AES
 from Cryptodome.Util.Padding import pad, unpad
 
+
 logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 
 # Enable logging
@@ -38,6 +39,7 @@ def catch_common_errors(func):
 
 class AESCipher:
     """Implement AES Cipher Block Chaining encryption and decryption."""
+
     def __init__(self, key):
         """Make a fixed sha256 bit length key."""
         self.key = hashlib.sha256(key.encode('utf-8')).digest()
