@@ -183,12 +183,11 @@ class ChatServer():
                 logging.warning(f'Error: {e}')
                 return False
 
-            if not nick:
-                self.remove_client(sock, f'Bad client socket {sock}')
-                return False
-
+            # Decrypt and decode data
             nick = cipher.decrypt(nick)
             nick = nick.decode('utf-8', 'ignore')
+
+            # Verify nickname
             if nick in self.nicks.values():
                 msg = f'{nick} is already taken, choose another name.'
                 self.broadcast_to_client(msg, sock)
@@ -203,9 +202,6 @@ class ChatServer():
 
     def broadcast_to_all(self, msg, omit_client=None, prefix=''):
         """Broadcast a message to clients."""
-        # Potential clients to remove
-        dead_clients = []
-
         # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
@@ -226,12 +222,9 @@ class ChatServer():
             try:
                 sock.sendall(msg)
             except OSError as e:
-                logging.warning(f'Error: {e}')
-                dead_clients.append(sock)
-
-        # Remove unresponsive client connections
-        for sock in dead_clients:
-            self.remove_client(sock, f'Dead client {sock}')
+                logging.warning(f'Broadcast error: {e}')
+                msg = f'{self.nicks[sock]}'
+                self.remove_client(sock, msg)
 
     def broadcast_to_client(self, msg, sock, prefix=''):
         """Broadcast a message to a single client."""
@@ -243,8 +236,9 @@ class ChatServer():
         try:
             sock.sendall(msg)
         except OSError as e:
-            logging.warning(f'Error: {e}')
-            self.remove_client(sock, 'Unknown')
+            logging.warning(f'Broadcast error: {e}')
+            msg = f'{self.nicks[sock]}'
+            self.remove_client(sock, msg)
 
     def client_thread_loop(self, sock, nick):
         """Send/Receive loop for client thread."""
@@ -253,14 +247,9 @@ class ChatServer():
                 msg = sock.recv(self.BUFSIZ)
             except OSError as e:
                 logging.warning(f'Error: {e}')
-                break
-
-            if not msg:
-                logging.warn(f'Error: unable to recvieve from {nick}')
                 self.remove_client(sock, nick)
-                break
 
-            # Decrypt the message
+            # Decrypt and decode the message
             msg = cipher.decrypt(msg)
             msg = msg.decode('utf-8', 'ignore')
 
