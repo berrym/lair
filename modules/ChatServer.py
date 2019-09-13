@@ -81,7 +81,7 @@ class ChatServer():
 
         try:
             accept_thread = threading.Thread(target=self.event_loop)
-            accept_thread.setDaemon(True)
+            accept_thread.daemon = True
             accept_thread.start()
             accept_thread.join()
         except KeyboardInterrupt:
