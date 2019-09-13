@@ -78,14 +78,23 @@ class ChatServer():
         """Run the chat server."""
         # Start the main thread
         logging.info('Starting main thread, waiting for connections')
-        accept_thread = threading.Thread(target=self.event_loop)
-        accept_thread.start()
-        accept_thread.join()
+
+        try:
+            accept_thread = threading.Thread(target=self.event_loop)
+            accept_thread.setDaemon(True)
+            accept_thread.start()
+            accept_thread.join()
+        except KeyboardInterrupt:
+            self.close_server()
+
         logging.info('Main thread exited.')
 
     def event_loop(self):
         """Select between reading from server socket and standard input."""
         while not self.exit_flag:
+            ct = threading.currentThread()
+            logging.info(f'Executing event loop in {ct.name}')
+
             events = self.sel.select()
             for key, mask in events:
                 callback = key.data

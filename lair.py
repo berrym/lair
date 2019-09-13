@@ -33,6 +33,20 @@ prog = sys.argv[0]
 prog.replace('./', '')
 
 
+def sigint_catch(func):
+    """Catch keyboard interrupt and exit process."""
+    def wrapper(*args, **kwargs):
+        """Wrapper around func to catch keyboard interrupt."""
+        try:
+            result = func(*args, **kwargs)
+            return result
+        except KeyboardInterrupt:
+            sys.exit(0)
+
+    return wrapper
+
+
+@sigint_catch
 def main():
     """Main Function."""
     # Create a command line argument parser
