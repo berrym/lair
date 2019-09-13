@@ -188,6 +188,9 @@ class ChatServer():
 
             # Decrypt and decode data
             nick = cipher.decrypt(nick)
+            if nick is None:
+                self.remove_client(sock, nick)
+                return False
             nick = nick.decode('utf-8', 'ignore')
 
             # Verify nickname
@@ -208,6 +211,9 @@ class ChatServer():
         # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
+        if msg is None:
+            self.remove_client(omit_client, self.nicks[omit_client])
+            return
 
         # Check message length, if too long inform client
         if len(msg) >= self.BUFSIZ:
@@ -234,6 +240,9 @@ class ChatServer():
         # Create the encrypted message
         msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
+        if msg is None:
+            self.remove_client(sock, self.nicks[sock])
+            return
 
         # Send message
         try:
@@ -251,9 +260,13 @@ class ChatServer():
             except OSError as e:
                 logging.warning(f'Error: {e}')
                 self.remove_client(sock, nick)
+                return
 
             # Decrypt and decode the message
             msg = cipher.decrypt(msg)
+            if msg is None:
+                self.remove_client(sock, nick)
+                return
             msg = msg.decode('utf-8', 'ignore')
 
             if msg == '{quit}':

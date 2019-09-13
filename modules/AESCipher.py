@@ -22,16 +22,16 @@ logging.basicConfig(
     handlers=[logging.FileHandler(logfilename), logging.StreamHandler()])
 
 
-def catch_value_error(func):
-    """Catch ValueError Exceptions."""
+def catch_common_errors(func):
+    """Catch common exceptions."""
     def wrapper(*args, **kwargs):
-        """Wrap around func and catch ValueError's."""
+        """Wrap around func and catch common exceptions."""
         try:
             result = func(*args, **kwargs)
             return result
-        except ValueError as e:
-            logging.info(f'error: {e}')
-            exit(1)
+        except (ValueError, AttributeError) as e:
+            logging.info(f'AESCipher error: {e}')
+            return None
 
     return wrapper
 
@@ -42,7 +42,7 @@ class AESCipher:
         """Make a fixed sha256 bit length key."""
         self.key = hashlib.sha256(key.encode('utf-8')).digest()
 
-    @catch_value_error
+    @catch_common_errors
     def encrypt(self, raw_data):
         """Encrypt raw data."""
         raw_data = pad(raw_data.encode('utf-8'), AES.block_size)
@@ -50,7 +50,7 @@ class AESCipher:
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw_data))
 
-    @catch_value_error
+    @catch_common_errors
     def decrypt(self, enc_data):
         """Decrypt encoded data."""
         enc_data = base64.b64decode(enc_data)

@@ -74,6 +74,8 @@ class ChatClient():
 
         # Print the message
         msg = cipher.decrypt(msg)
+        if msg is None:
+            return
         msg = msg.decode('utf-8', 'ignore')
         print(msg)
 
@@ -93,6 +95,8 @@ class ChatClient():
 
         # Encrypt the message
         msg = cipher.encrypt(msg)
+        if msg is None:
+            return
 
         # Send the message
         try:
