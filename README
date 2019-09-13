@@ -16,8 +16,6 @@ For the GUI
 
 PyQt5: many ways to install including pip
 
-psutil: pip install psutil
-
 BASIC USAGE
 
 There is a script lair.py in the top level of the repo

@@ -22,10 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
-import os
 import sys
 import socket
-import psutil
 from threading import Thread
 from PyQt5 import QtCore, QtWidgets
 from modules.AESCipher import cipher
@@ -36,12 +34,6 @@ ADDR = '127.0.0.1'
 PORT = 1234
 TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 EXIT_FLAG = False
-
-
-def kill_proc_tree(pid):
-    """Kill the entrire process tree."""
-    parent = psutil.Process(pid)
-    parent.kill()
 
 
 def formatText(color='black', text=''):
@@ -129,6 +121,7 @@ class ChatWindow(QtWidgets.QDialog):
 
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
+        self.chatTextField.setFocus()
 
     def closeEvent(self, event):
         """Quit app when the window is closed."""
@@ -137,49 +130,39 @@ class ChatWindow(QtWidgets.QDialog):
 
     def quit(self, event=None):
         """Exit the program."""
-        try:
-            TCP_CLIENT.shutdown(socket.SHUT_RDWR)
-            TCP_CLIENT.close()
-        except OSError as e:
-            CriticalError(self, e)
+        global EXIT_FLAG
+        global TCP_CLIENT
+
+        if EXIT_FLAG:
+            try:
+                data = '{quit}'
+                data = cipher.encrypt(data)
+                TCP_CLIENT.sendall(data)
+                TCP_CLIENT.close()
+            except OSError as e:
+                CriticalError(self, f'Chat window->quit: {e}')
 
         self.close()
-        kill_proc_tree(os.getpid())
+        exit(0)
 
     def send(self):
         """Send text to the lair server."""
         global EXIT_FLAG
         text = self.chatTextField.text()
-        font = self.chat.font()
-        self.chat.setFont(font)
 
         if text == '{help}':
             self.chatTextField.setText('')
             return self.help()
         elif text == '{quit}':
-            self.chatTextField.setText('')
-
-            # Encrypt the text
-            text = cipher.encrypt(text)
-
-            # Send the text
-            try:
-                TCP_CLIENT.send(text)
-            except OSError as e:
-                CriticalError(self.window, e)
-
-            EXIT_FLAG = True
-
-        # Check if EXIT_FLAG is set
-        if EXIT_FLAG:
             self.quit()
+            EXIT_FLAG = True
 
         # Encrpyt the text
         text = cipher.encrypt(text)
 
         # Send the text
         try:
-            TCP_CLIENT.send(text)
+            TCP_CLIENT.sendall(text)
         except OSError as e:
             CriticalError(self.window, e)
             self.quit()
@@ -211,14 +194,17 @@ class ClientThread(Thread):
 
         # Shutdown client connection
         try:
+            data = '{quit}'
+            data = cipher.encrypt(data)
+            TCP_CLIENT.sendall(data)
             TCP_CLIENT.shutdown(socket.SHUT_RDWR)
             TCP_CLIENT.close()
         except OSError as e:
-            CriticalError(self.window, e)
+            CriticalError(None, f'Client Thread->quit: {e}')
 
-        # Close the window and kill the process tree
+        # Close the window and exit
         self.window.close()
-        kill_proc_tree(os.getpid())
+        exit(0)
 
     def recv_loop(self):
         """Read data from server."""
@@ -229,7 +215,7 @@ class ClientThread(Thread):
             try:
                 data = TCP_CLIENT.recv(BUFSIZ)
             except OSError as e:
-                CriticalError(self.window, e)
+                CriticalError(None, e)
                 EXIT_FLAG = True
 
             # Decrypyt and decode the data
@@ -266,6 +252,7 @@ def main():
     conn_win.exec_()
     main_win = ChatWindow()
     ct = ClientThread(main_win)
+    ct.daemon = True
     ct.start()
     main_win.exec_()
     sys.exit(app.exec_())
@@ -273,4 +260,4 @@ def main():
 
 # __main__? Program entry point
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
