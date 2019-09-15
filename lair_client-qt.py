@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import socket
-from threading import Thread
 from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import QThread
 from modules.AESCipher import cipher
 
 
@@ -33,7 +33,7 @@ from modules.AESCipher import cipher
 ADDR = '127.0.0.1'
 PORT = 1234
 TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-EXIT_FLAG = False
+ANNOUNCE_EXIT = False
 
 
 def formatText(color='black', text=''):
@@ -132,47 +132,54 @@ class ChatWindow(QtWidgets.QDialog):
 
     def quit(self, event=None):
         """Exit the program."""
-        global EXIT_FLAG
+        global ANNOUNCE_EXIT
         global TCP_CLIENT
 
-        if EXIT_FLAG:
+        if ANNOUNCE_EXIT:
             try:
                 data = '{quit}'
                 data = cipher.encrypt(data)
                 TCP_CLIENT.sendall(data)
-                TCP_CLIENT.close()
             except OSError as e:
                 CriticalError(self, f'Chat window->quit: {e}')
+            finally:
+                TCP_CLIENT.close()
+        else:
+            ANNOUNCE_EXIT = True
 
-        self.close()
         exit(0)
 
     def send(self):
         """Send text to the lair server."""
-        global EXIT_FLAG
+        global ANNOUNCE_EXIT
         text = self.chatTextField.text()
 
         if text == '{help}':
             self.chatTextField.setText('')
             return self.help()
         elif text == '{quit}':
-            self.quit()
-            EXIT_FLAG = True
+            ANNOUNCE_EXIT = True
+            exit(self.quit())
 
         # Encrpyt the text
-        text = cipher.encrypt(text)
+        data = cipher.encrypt(text)
+        if data is None:
+            CriticalError(self, 'unable to encrypt data.')
+            exit(self.quit())
 
         # Send the text
         try:
-            TCP_CLIENT.sendall(text)
+            TCP_CLIENT.sendall(data)
         except OSError as e:
             CriticalError(self.window, e)
-            self.quit()
+            exit(self.quit())
+
+        # Decrypt the text
+        decrypted = cipher.decrypt(data)
+        msg = decrypted.decode('utf-8', 'ignore')
 
         # Update UI
-        text = cipher.decrypt(text)
-        text = text.decode('utf-8', 'ignore')
-        self.chat.append(text)
+        self.chat.append(msg)
         self.chatTextField.setText('')
 
     def help(self):
@@ -183,66 +190,61 @@ class ChatWindow(QtWidgets.QDialog):
         self.chat.append('\t{who}\tList of user names in the lair.')
 
 
-class ClientThread(Thread):
+class ClientThread(QThread):
     """Create a client thread for networking communications."""
-
     def __init__(self, window):
         """Initialize the thread."""
-        Thread.__init__(self)
+        QThread.__init__(self)
         self.window = window
+
+    def __del__(self):
+        """Thread cleanup."""
+        self.wait()
 
     def quit(self):
         """Exit the program."""
-        global TCP_CLIENT
-
-        # Shutdown client connection
-        try:
-            data = '{quit}'
-            data = cipher.encrypt(data)
-            TCP_CLIENT.sendall(data)
-            TCP_CLIENT.shutdown(socket.SHUT_RDWR)
-            TCP_CLIENT.close()
-        except OSError as e:
-            CriticalError(None, f'Client Thread->quit: {e}')
-
-        # Close the window and exit
-        self.window.close()
-        exit(0)
+        exit(self.window.quit())
 
     def recv_loop(self):
         """Read data from server."""
         BUFSIZ = 4096
-        global EXIT_FLAG
+        global ANNOUNCE_EXIT
 
-        while not EXIT_FLAG:
+        while not ANNOUNCE_EXIT:
             try:
                 data = TCP_CLIENT.recv(BUFSIZ)
             except OSError as e:
-                CriticalError(None, e)
-                EXIT_FLAG = True
+                CriticalError(self.window, f'recv: {e}')
+                exit(self.quit())
+
+            # Make sure the other thread hasn't called quit yet
+            # If it has, stop executing this frame
+            if ANNOUNCE_EXIT:
+                exit(0)
 
             # Decrypyt and decode the data
-            data = cipher.decrypt(data)
-            data = data.decode('utf-8', 'ignore')
+            decrypted = cipher.decrypt(data)
+            if decrypted is None:
+                CriticalError(self.window, 'unable to decrypt message')
+                exit(self.quit())
 
-            # The server closed, set EXIT_FLAG
-            if data == 'The lair is closed.':
-                self.quit()
+            msg = decrypted.decode('utf-8', 'ignore')
+
+            # The server closed, do NOT set ANNOUNCE_EXIT
+            if msg == 'The lair is closed.':
+                exit(self.quit())
 
             # add recieved text to chat field
-            self.window.chat.append(formatText(color='blue', text=data))
-
-        self.quit()
+            self.window.chat.append(formatText(color='blue', text=msg))
 
     def run(self):
         """Run the client thread."""
-        global EXIT_FLAG
-
+        global TCP_CLIENT
         try:
             TCP_CLIENT.connect((ADDR, PORT))
         except OSError as e:
             CriticalError(self.window, e)
-            EXIT_FLAG = True
+            return self.quit()
 
         # recieve loop
         self.recv_loop()
@@ -255,10 +257,9 @@ def main():
     conn_win.exec_()
     main_win = ChatWindow()
     ct = ClientThread(main_win)
-    ct.daemon = True
     ct.start()
     main_win.exec_()
-    sys.exit(app.exec_())
+    app.exec_()
 
 
 # __main__? Program entry point
