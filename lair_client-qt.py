@@ -25,14 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import socket
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import QThread
 from modules.AESCipher import cipher
 
 
 # Global variables
 ANNOUNCE_EXIT = False
-ADDR = '127.0.0.1'
-PORT = 1234
 
 
 def formatText(color='black', text=''):
@@ -51,7 +48,7 @@ def CriticalError(parent=None, err=None):
 class ConnectionDialog(QtWidgets.QDialog):
     """Get Server Options."""
 
-    def __init__(self):
+    def __init__(self, conn):
         """Create a simple dialog.
 
         Populate address and port of server with user input.
@@ -61,12 +58,12 @@ class ConnectionDialog(QtWidgets.QDialog):
         # Address
         addressLabel = QtWidgets.QLabel('Server Address', self)
         self.addressField = QtWidgets.QLineEdit(self)
-        self.addressField.setText(ADDR)
+        self.addressField.setText('127.0.0.1')
 
         # Port
         portLabel = QtWidgets.QLabel('Server Port', self)
         self.portField = QtWidgets.QLineEdit(self)
-        self.portField.setText(str(PORT))
+        self.portField.setText('8888')
 
         # Click button
         btnConnect = QtWidgets.QPushButton('Connect', self)
@@ -84,14 +81,17 @@ class ConnectionDialog(QtWidgets.QDialog):
         self.setLayout(vbox)
         self.setWindowTitle('Connect to Lair Server')
 
+        self.conn = conn
+
     def set_host(self):
         """Get user input from the text fields.
 
         Set global host variables ADDR and PORT then exit dialog."""
-        global ADDR
-        global PORT
-        ADDR = self.addressField.text()
-        PORT = int(self.portField.text())
+        #global ADDR
+        #global PORT
+        addr = self.addressField.text()
+        port = int(self.portField.text())
+        self.conn.append((addr, port))
         self.accept()
 
 
@@ -201,13 +201,15 @@ class ChatWindow(QtWidgets.QDialog):
         self.chat.append('\t{who}\tList of user names in the lair.')
 
 
-class ClientThread(QThread):
+class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
-    def __init__(self, window, sock):
+
+    def __init__(self, window, sock, conn):
         """Initialize the thread."""
-        QThread.__init__(self)
+        QtCore.QThread.__init__(self)
         self.window = window
         self.sock = sock
+        self.conn = conn
 
     def __del__(self):
         """Thread cleanup."""
@@ -252,7 +254,7 @@ class ClientThread(QThread):
     def run(self):
         """Run the client thread."""
         try:
-            self.sock.connect((ADDR, PORT))
+            self.sock.connect(self.conn)
         except OSError as e:
             CriticalError(self.window, e)
             return self.quit()
@@ -263,13 +265,19 @@ class ClientThread(QThread):
 
 def main():
     """Main function."""
+    conn = []
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     app = QtWidgets.QApplication(sys.argv)
-    conn_win = ConnectionDialog()
+
+    conn_win = ConnectionDialog(conn)
     conn_win.exec_()
+
     main_win = ChatWindow(tcp_sock)
-    ct = ClientThread(main_win, tcp_sock)
+
+    ct = ClientThread(main_win, tcp_sock, conn[0])
     ct.start()
+
     main_win.exec_()
     app.exec_()
 
