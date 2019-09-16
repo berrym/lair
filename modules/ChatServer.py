@@ -26,6 +26,7 @@ logging.basicConfig(
 
 class ChatServer():
     """A simple chatroom server."""
+
     def __init__(self, host, port):
         """Initialize the chat server.
 
@@ -254,18 +255,18 @@ class ChatServer():
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
-                msg = sock.recv(self.BUFSIZ)
+                data = sock.recv(self.BUFSIZ)
             except OSError as e:
                 logging.warning(f'Receive error: {e}')
                 self.remove_client(sock, nick)
                 return
 
             # Decrypt and decode the message
-            msg = cipher.decrypt(msg)
-            if msg is None:
+            decrypted = cipher.decrypt(data)
+            if decrypted is None:
                 self.remove_client(sock, nick)
                 return
-            msg = msg.decode('utf-8', 'ignore')
+            msg = decrypted.decode('utf-8', 'ignore')
 
             if msg == '{quit}':
                 self.remove_client(sock, nick)

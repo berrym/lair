@@ -12,6 +12,7 @@ from modules.AESCipher import cipher
 
 class ChatClient():
     """Create a chat client."""
+
     def __init__(self, host, port):
         """Create a chat client connection.
 
@@ -67,16 +68,16 @@ class ChatClient():
     def read_server(self, key, mask):
         """Read messages from the chat server."""
         try:
-            msg = self.server.recv(self.BUFSIZ)
+            data = self.server.recv(self.BUFSIZ)
         except OSError as e:
             print(f'Error: {e}')
             return
 
         # Print the message
-        msg = cipher.decrypt(msg)
-        if msg is None:
+        decrypted = cipher.decrypt(data)
+        if decrypted is None:
             return
-        msg = msg.decode('utf-8', 'ignore')
+        msg = decrypted.decode('utf-8', 'ignore')
         print(msg)
 
         # Check if the server closed
