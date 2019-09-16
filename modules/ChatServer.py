@@ -111,7 +111,7 @@ class ChatServer():
         elif command == 'who':
             self.who()
         else:
-            print(f'Error: unknown command {command}')
+            print(f'error: unknown command {command}')
 
     def close_server(self):
         """Shutdown the chat server."""
@@ -153,9 +153,9 @@ class ChatServer():
         self.addrs[sock] = addr
 
         # Start the new thread
-        logging.info(f'Starting a client thread for {addr[0]}:{addr[1]}')
+        logging.info(f'Starting a client thread for {addr}')
         threading.Thread(target=self.handle_client, args=(sock,)).start()
-        logging.info(f'Client thread for {addr[0]}:{addr[1]} started')
+        logging.info(f'Client thread for {addr} started')
 
     def handle_client(self, sock):
         """Handles a single client connection."""
