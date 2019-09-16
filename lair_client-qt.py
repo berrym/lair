@@ -30,10 +30,9 @@ from modules.AESCipher import cipher
 
 
 # Global variables
+ANNOUNCE_EXIT = False
 ADDR = '127.0.0.1'
 PORT = 1234
-TCP_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ANNOUNCE_EXIT = False
 
 
 def formatText(color='black', text=''):
@@ -58,21 +57,31 @@ class ConnectionDialog(QtWidgets.QDialog):
         Populate address and port of server with user input.
         """
         super().__init__()
-        self.addressLabel = QtWidgets.QLabel('Server Address', self)
+
+        # Address
+        addressLabel = QtWidgets.QLabel('Server Address', self)
         self.addressField = QtWidgets.QLineEdit(self)
         self.addressField.setText(ADDR)
-        self.portLabel = QtWidgets.QLabel('Server Port', self)
+
+        # Port
+        portLabel = QtWidgets.QLabel('Server Port', self)
         self.portField = QtWidgets.QLineEdit(self)
         self.portField.setText(str(PORT))
-        self.btnConnect = QtWidgets.QPushButton('Connect', self)
-        self.btnConnect.clicked.connect(self.set_host)
-        self.vbox = QtWidgets.QVBoxLayout()
-        self.vbox.addWidget(self.addressLabel)
-        self.vbox.addWidget(self.addressField)
-        self.vbox.addWidget(self.portLabel)
-        self.vbox.addWidget(self.portField)
-        self.vbox.addWidget(self.btnConnect)
-        self.setLayout(self.vbox)
+
+        # Click button
+        btnConnect = QtWidgets.QPushButton('Connect', self)
+        btnConnect.clicked.connect(self.set_host)
+
+        # Create a vertical box layout
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.addWidget(addressLabel)
+        vbox.addWidget(self.addressField)
+        vbox.addWidget(portLabel)
+        vbox.addWidget(self.portField)
+        vbox.addWidget(btnConnect)
+
+        # Set the layout
+        self.setLayout(vbox)
         self.setWindowTitle('Connect to Lair Server')
 
     def set_host(self):
@@ -83,13 +92,13 @@ class ConnectionDialog(QtWidgets.QDialog):
         global PORT
         ADDR = self.addressField.text()
         PORT = int(self.portField.text())
-        self.close()
+        self.accept()
 
 
 class ChatWindow(QtWidgets.QDialog):
     """Graphical chat window."""
 
-    def __init__(self):
+    def __init__(self, sock):
         """Initialize the chat window.
 
         Create all gui components.
@@ -99,13 +108,14 @@ class ChatWindow(QtWidgets.QDialog):
         self.chatTextField.resize(480, 100)
         self.chatTextField.move(10, 350)
 
-        self.btnSend = QtWidgets.QPushButton("Send", self)
-        self.btnSend.resize(480, 30)
-        self.btnSendFont = self.btnSend.font()
-        self.btnSendFont.setPointSize(12)
-        self.btnSend.setFont(self.btnSendFont)
-        self.btnSend.move(10, 460)
-        self.btnSend.clicked.connect(self.send)
+        btnSend = QtWidgets.QPushButton("Send", self)
+        btnSend.resize(480, 30)
+        btnSendFont = btnSend.font()
+        btnSendFont.setPointSize(12)
+        btnSend.setFont(btnSendFont)
+        btnSend.move(10, 460)
+        btnSend.clicked.connect(self.send)
+
         self.chatBody = QtWidgets.QVBoxLayout(self)
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
@@ -117,13 +127,15 @@ class ChatWindow(QtWidgets.QDialog):
 
         splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(splitter)
-        splitter2.addWidget(self.btnSend)
+        splitter2.addWidget(btnSend)
         splitter2.setSizes([200, 10])
         self.chatBody.addWidget(splitter2)
 
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
         self.chatTextField.setFocus()
+
+        self.sock = sock
 
     def closeEvent(self, event):
         """Quit app when the window is closed."""
@@ -133,17 +145,16 @@ class ChatWindow(QtWidgets.QDialog):
     def quit(self, event=None):
         """Exit the program."""
         global ANNOUNCE_EXIT
-        global TCP_CLIENT
 
         if ANNOUNCE_EXIT:
             try:
                 data = '{quit}'
                 data = cipher.encrypt(data)
-                TCP_CLIENT.sendall(data)
+                self.sock.sendall(data)
             except OSError as e:
                 CriticalError(self, f'Chat window->quit: {e}')
             finally:
-                TCP_CLIENT.close()
+                self.sock.close()
         else:
             ANNOUNCE_EXIT = True
 
@@ -169,7 +180,7 @@ class ChatWindow(QtWidgets.QDialog):
 
         # Send the text
         try:
-            TCP_CLIENT.sendall(data)
+            self.sock.sendall(data)
         except OSError as e:
             CriticalError(self.window, e)
             exit(self.quit())
@@ -192,10 +203,11 @@ class ChatWindow(QtWidgets.QDialog):
 
 class ClientThread(QThread):
     """Create a client thread for networking communications."""
-    def __init__(self, window):
+    def __init__(self, window, sock):
         """Initialize the thread."""
         QThread.__init__(self)
         self.window = window
+        self.sock = sock
 
     def __del__(self):
         """Thread cleanup."""
@@ -212,7 +224,7 @@ class ClientThread(QThread):
 
         while not ANNOUNCE_EXIT:
             try:
-                data = TCP_CLIENT.recv(BUFSIZ)
+                data = self.sock.recv(BUFSIZ)
             except OSError as e:
                 CriticalError(self.window, f'recv: {e}')
                 exit(self.quit())
@@ -239,9 +251,8 @@ class ClientThread(QThread):
 
     def run(self):
         """Run the client thread."""
-        global TCP_CLIENT
         try:
-            TCP_CLIENT.connect((ADDR, PORT))
+            self.sock.connect((ADDR, PORT))
         except OSError as e:
             CriticalError(self.window, e)
             return self.quit()
@@ -252,11 +263,12 @@ class ClientThread(QThread):
 
 def main():
     """Main function."""
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     app = QtWidgets.QApplication(sys.argv)
     conn_win = ConnectionDialog()
     conn_win.exec_()
-    main_win = ChatWindow()
-    ct = ClientThread(main_win)
+    main_win = ChatWindow(tcp_sock)
+    ct = ClientThread(main_win, tcp_sock)
     ct.start()
     main_win.exec_()
     app.exec_()
