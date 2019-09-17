@@ -204,63 +204,51 @@ class ChatWindow(QtWidgets.QDialog):
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
-    def __init__(self, window, sock, conn):
+    def __init__(self, window, sock):
         """Initialize the thread."""
         QtCore.QThread.__init__(self)
         self.window = window
         self.sock = sock
-        self.conn = conn
 
     def __del__(self):
         """Thread cleanup."""
         self.wait()
 
-    def quit(self):
-        """Exit the program."""
-        exit(self.window.quit())
-
     def recv_loop(self):
         """Read data from server."""
         BUFSIZ = 4096
-        global ANNOUNCE_EXIT
 
-        while not ANNOUNCE_EXIT:
-            try:
-                data = self.sock.recv(BUFSIZ)
-            except OSError as e:
-                CriticalError(self.window, f'recv: {e}')
-                exit(self.quit())
+        try:
+            data = self.sock.recv(BUFSIZ)
+        except OSError as e:
+            CriticalError(self.window, f'recv: {e}')
+            exit(self.window.quit())
 
-            # Make sure the other thread hasn't called quit yet
-            # If it has, stop executing this frame
-            if ANNOUNCE_EXIT:
-                exit(0)
+        # Make sure the other thread hasn't called quit yet
+        # If it has, stop executing this frame
+        if ANNOUNCE_EXIT:
+            exit(0)
 
-            # Decrypyt and decode the data
-            decrypted = cipher.decrypt(data)
-            if decrypted is None:
-                CriticalError(self.window, 'unable to decrypt message')
-                exit(self.quit())
+        # Decrypyt and decode the data
+        decrypted = cipher.decrypt(data)
+        if decrypted is None:
+            CriticalError(self.window, 'unable to decrypt message')
+            exit(self.window.quit())
 
-            msg = decrypted.decode('utf-8', 'ignore')
+        msg = decrypted.decode('utf-8', 'ignore')
 
-            # The server closed, do NOT set ANNOUNCE_EXIT
-            if msg == 'The lair is closed.':
-                exit(self.quit())
+        # The server closed, do NOT set ANNOUNCE_EXIT
+        if msg == 'The lair is closed.':
+            exit(self.window.quit())
 
-            # add recieved text to chat field
-            self.window.chat.append(formatText(color='blue', text=msg))
+        # add recieved text to chat field
+        self.window.chat.append(formatText(color='blue', text=msg))
 
     def run(self):
         """Run the client thread."""
-        try:
-            self.sock.connect(self.conn)
-        except OSError as e:
-            CriticalError(self.window, e)
-            return self.quit()
-
-        # recieve loop
-        self.recv_loop()
+        global ANNOUNCE_EXIT
+        while not ANNOUNCE_EXIT:
+            self.recv_loop()
 
 
 def main():
@@ -273,9 +261,15 @@ def main():
     conn_win = ConnectionDialog(conn)
     conn_win.exec_()
 
+    try:
+        tcp_sock.connect(conn[0])
+    except OSError as e:
+        CriticalError(None, e)
+        exit(1)
+
     main_win = ChatWindow(tcp_sock)
 
-    ct = ClientThread(main_win, tcp_sock, conn[0])
+    ct = ClientThread(main_win, tcp_sock)
     ct.start()
 
     main_win.exec_()
