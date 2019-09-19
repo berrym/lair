@@ -96,17 +96,37 @@ class ConnectionDialog(QtWidgets.QDialog):
 class ChatWindow(QtWidgets.QMainWindow):
     """Graphical chat window."""
 
-    def __init__(self, sock):
+    def __init__(self):
         """Initialize the chat window.
 
         Create all gui components.
         """
         super().__init__()
+        self.initUI()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.conn = []
 
+    def initUI(self):
         self.windowFrame = QtWidgets.QVBoxLayout(self)
 
-        splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.setCentralWidget(splitter2)
+        exitAct = QtWidgets.QAction(QtGui.QIcon(''), 'Exit', self)
+        exitAct.setShortcut('Ctrl+Q')
+        exitAct.setStatusTip('Exit application')
+        exitAct.triggered.connect(self.close)
+
+        connAct = QtWidgets.QAction(QtGui.QIcon(''), 'Connect', self)
+        connAct.triggered.connect(self.connect)
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(connAct)
+        fileMenu.addAction(exitAct)
+        self.windowFrame.addWidget(menubar)
+
+
+        self.chatTextField = QtWidgets.QLineEdit(self)
+        self.chatTextField.resize(480, 100)
+        self.chatTextField.move(10, 350)
 
         btnSend = QtWidgets.QPushButton("Send", self)
         btnSend.resize(480, 30)
@@ -116,10 +136,6 @@ class ChatWindow(QtWidgets.QMainWindow):
         btnSend.move(10, 460)
         btnSend.clicked.connect(self.send)
 
-        self.chatTextField = QtWidgets.QLineEdit(self)
-        self.chatTextField.resize(480, 100)
-        self.chatTextField.move(10, 350)
-
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         self.chatView = QtWidgets.QTextEdit()
         self.chatView.setReadOnly(True)
@@ -127,16 +143,17 @@ class ChatWindow(QtWidgets.QMainWindow):
         splitter.addWidget(self.chatTextField)
         splitter.setSizes([400, 100])
 
+        splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(splitter)
         splitter2.addWidget(btnSend)
         splitter2.setSizes([200, 10])
+
         self.windowFrame.addWidget(splitter2)
+        self.setCentralWidget(splitter2)
 
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
         self.chatTextField.setFocus()
-
-        self.sock = sock
 
     def closeEvent(self, event):
         """Quit app when the window is closed."""
@@ -160,6 +177,12 @@ class ChatWindow(QtWidgets.QMainWindow):
             ANNOUNCE_EXIT = True
 
         exit(0)
+
+    def connect(self):
+        conn_win = ConnectionDialog(self.conn)
+        conn_win.exec_()
+        ct = ClientThread(self)
+        ct.start()
 
     def send(self):
         """Send text to the lair server."""
@@ -205,12 +228,10 @@ class ChatWindow(QtWidgets.QMainWindow):
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
-    def __init__(self, window, sock, conn):
+    def __init__(self, parent):
         """Initialize the thread."""
-        QtCore.QThread.__init__(self)
-        self.window = window
-        self.sock = sock
-        self.conn = conn
+        QtCore.QThread.__init__(self, parent)
+        self.parent = parent
 
     def __del__(self):
         """Thread cleanup."""
@@ -218,69 +239,57 @@ class ClientThread(QtCore.QThread):
 
     def quit(self):
         """Exit the program."""
-        exit(self.window.quit())
+        exit(self.parent.quit())
 
-    def recv_loop(self):
+    def recveive(self):
         """Read data from server."""
         BUFSIZ = 4096
         global ANNOUNCE_EXIT
 
-        while not ANNOUNCE_EXIT:
-            try:
-                data = self.sock.recv(BUFSIZ)
-            except OSError as e:
-                CriticalError(self.window, f'recv: {e}')
-                exit(self.quit())
+        try:
+            data = self.parent.sock.recv(BUFSIZ)
+        except OSError as e:
+            CriticalError(self.parent, f'recv: {e}')
+            exit(self.quit())
 
-            # Make sure the other thread hasn't called quit yet
-            # If it has, stop executing this frame
-            if ANNOUNCE_EXIT:
-                exit(0)
+        # Make sure the other thread hasn't called quit yet
+        # If it has, stop executing this frame
+        if ANNOUNCE_EXIT:
+            exit(0)
 
-            # Decrypyt and decode the data
-            decrypted = cipher.decrypt(data)
-            if decrypted is None:
-                CriticalError(self.window, 'unable to decrypt message')
-                exit(self.quit())
+        # Decrypyt and decode the data
+        decrypted = cipher.decrypt(data)
+        if decrypted is None:
+            CriticalError(self.parent, 'unable to decrypt message')
+            exit(self.quit())
 
-            msg = decrypted.decode('utf-8', 'ignore')
+        msg = decrypted.decode('utf-8', 'ignore')
 
-            # The server closed, do NOT set ANNOUNCE_EXIT
-            if msg == 'The lair is closed.':
-                exit(self.quit())
+        # add recieved text to chat field
+        self.parent.chatView.append(formatText(color='blue', text=msg))
 
-            # add recieved text to chat field
-            self.window.chatView.append(formatText(color='blue', text=msg))
+        # The server closed, do NOT set ANNOUNCE_EXIT
+        if msg == 'The lair is closed.':
+            exit(self.quit())
 
     def run(self):
         """Run the client thread."""
         try:
-            self.sock.connect(self.conn)
+            self.parent.sock.connect(self.parent.conn[0])
         except OSError as e:
-            CriticalError(self.window, e)
+            CriticalError(self.parent, e)
             return self.quit()
 
         # recieve loop
-        self.recv_loop()
+        while not ANNOUNCE_EXIT:
+            self.recveive()
 
 
 def main():
     """Main function."""
-    conn = []
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
     app = QtWidgets.QApplication(sys.argv)
-
-    conn_win = ConnectionDialog(conn)
-    conn_win.exec_()
-
-    main_win = ChatWindow(tcp_sock)
-
-    ct = ClientThread(main_win, tcp_sock, conn[0])
-    ct.start()
-
+    main_win = ChatWindow()
     main_win.show()
-
     app.exec_()
 
 
