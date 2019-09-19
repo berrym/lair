@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import socket
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 from modules.AESCipher import cipher
 
 
@@ -87,15 +87,13 @@ class ConnectionDialog(QtWidgets.QDialog):
         """Get user input from the text fields.
 
         Set global host variables ADDR and PORT then exit dialog."""
-        #global ADDR
-        #global PORT
         addr = self.addressField.text()
         port = int(self.portField.text())
         self.conn.append((addr, port))
         self.accept()
 
 
-class ChatWindow(QtWidgets.QDialog):
+class ChatWindow(QtWidgets.QMainWindow):
     """Graphical chat window."""
 
     def __init__(self, sock):
@@ -104,9 +102,11 @@ class ChatWindow(QtWidgets.QDialog):
         Create all gui components.
         """
         super().__init__()
-        self.chatTextField = QtWidgets.QLineEdit(self)
-        self.chatTextField.resize(480, 100)
-        self.chatTextField.move(10, 350)
+
+        self.windowFrame = QtWidgets.QVBoxLayout(self)
+
+        splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        self.setCentralWidget(splitter2)
 
         btnSend = QtWidgets.QPushButton("Send", self)
         btnSend.resize(480, 30)
@@ -116,20 +116,21 @@ class ChatWindow(QtWidgets.QDialog):
         btnSend.move(10, 460)
         btnSend.clicked.connect(self.send)
 
-        self.chatBody = QtWidgets.QVBoxLayout(self)
+        self.chatTextField = QtWidgets.QLineEdit(self)
+        self.chatTextField.resize(480, 100)
+        self.chatTextField.move(10, 350)
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.chat = QtWidgets.QTextEdit()
-        self.chat.setReadOnly(True)
-        splitter.addWidget(self.chat)
+        self.chatView = QtWidgets.QTextEdit()
+        self.chatView.setReadOnly(True)
+        splitter.addWidget(self.chatView)
         splitter.addWidget(self.chatTextField)
         splitter.setSizes([400, 100])
 
-        splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(splitter)
         splitter2.addWidget(btnSend)
         splitter2.setSizes([200, 10])
-        self.chatBody.addWidget(splitter2)
+        self.windowFrame.addWidget(splitter2)
 
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
@@ -190,65 +191,77 @@ class ChatWindow(QtWidgets.QDialog):
         msg = decrypted.decode('utf-8', 'ignore')
 
         # Update UI
-        self.chat.append(msg)
+        self.chatView.append(msg)
         self.chatTextField.setText('')
 
     def help(self):
         """Print a list of available commands."""
-        self.chat.append('Available Commands:\n')
-        self.chat.append('\t{help}:\tThis help menu')
-        self.chat.append('\t{quit}:\tExit program')
-        self.chat.append('\t{who}\tList of user names in the lair.')
+        self.chatView.append('Available Commands:\n')
+        self.chatView.append('\t{help}:\tThis help menu')
+        self.chatView.append('\t{quit}:\tExit program')
+        self.chatView.append('\t{who}\tList of user names in the lair.')
 
 
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
-    def __init__(self, window, sock):
+    def __init__(self, window, sock, conn):
         """Initialize the thread."""
         QtCore.QThread.__init__(self)
         self.window = window
         self.sock = sock
+        self.conn = conn
 
     def __del__(self):
         """Thread cleanup."""
         self.wait()
 
+    def quit(self):
+        """Exit the program."""
+        exit(self.window.quit())
+
     def recv_loop(self):
         """Read data from server."""
         BUFSIZ = 4096
+        global ANNOUNCE_EXIT
 
-        try:
-            data = self.sock.recv(BUFSIZ)
-        except OSError as e:
-            CriticalError(self.window, f'recv: {e}')
-            exit(self.window.quit())
+        while not ANNOUNCE_EXIT:
+            try:
+                data = self.sock.recv(BUFSIZ)
+            except OSError as e:
+                CriticalError(self.window, f'recv: {e}')
+                exit(self.quit())
 
-        # Make sure the other thread hasn't called quit yet
-        # If it has, stop executing this frame
-        if ANNOUNCE_EXIT:
-            exit(0)
+            # Make sure the other thread hasn't called quit yet
+            # If it has, stop executing this frame
+            if ANNOUNCE_EXIT:
+                exit(0)
 
-        # Decrypyt and decode the data
-        decrypted = cipher.decrypt(data)
-        if decrypted is None:
-            CriticalError(self.window, 'unable to decrypt message')
-            exit(self.window.quit())
+            # Decrypyt and decode the data
+            decrypted = cipher.decrypt(data)
+            if decrypted is None:
+                CriticalError(self.window, 'unable to decrypt message')
+                exit(self.quit())
 
-        msg = decrypted.decode('utf-8', 'ignore')
+            msg = decrypted.decode('utf-8', 'ignore')
 
-        # The server closed, do NOT set ANNOUNCE_EXIT
-        if msg == 'The lair is closed.':
-            exit(self.window.quit())
+            # The server closed, do NOT set ANNOUNCE_EXIT
+            if msg == 'The lair is closed.':
+                exit(self.quit())
 
-        # add recieved text to chat field
-        self.window.chat.append(formatText(color='blue', text=msg))
+            # add recieved text to chat field
+            self.window.chatView.append(formatText(color='blue', text=msg))
 
     def run(self):
         """Run the client thread."""
-        global ANNOUNCE_EXIT
-        while not ANNOUNCE_EXIT:
-            self.recv_loop()
+        try:
+            self.sock.connect(self.conn)
+        except OSError as e:
+            CriticalError(self.window, e)
+            return self.quit()
+
+        # recieve loop
+        self.recv_loop()
 
 
 def main():
@@ -261,18 +274,13 @@ def main():
     conn_win = ConnectionDialog(conn)
     conn_win.exec_()
 
-    try:
-        tcp_sock.connect(conn[0])
-    except OSError as e:
-        CriticalError(None, e)
-        exit(1)
-
     main_win = ChatWindow(tcp_sock)
 
-    ct = ClientThread(main_win, tcp_sock)
+    ct = ClientThread(main_win, tcp_sock, conn[0])
     ct.start()
 
-    main_win.exec_()
+    main_win.show()
+
     app.exec_()
 
 
