@@ -11,6 +11,7 @@ import logging
 import threading
 import selectors
 import socket
+import datetime
 from modules.AESCipher import cipher
 
 
@@ -274,7 +275,13 @@ class ChatServer():
             elif msg == '{who}':
                 self.tell_who(sock)
             else:
-                self.broadcast_to_all(msg, sock, nick + ': ')
+                dtime = datetime.datetime.utcnow()
+                hour = str(dtime.hour).zfill(2)
+                minute = str(dtime.minute).zfill(2)
+                sec = str(dtime.second).zfill(2)
+                timestamp = f'{hour}:{minute}:{sec}'
+                prefix = f'[{timestamp}]\n{nick}' + ': '
+                self.broadcast_to_all(msg, sock, prefix)
 
     def remove_client(self, sock, nick):
         """Remove a client connection."""
