@@ -32,12 +32,12 @@ from modules.AESCipher import aes_cipher
 ANNOUNCE_EXIT = False
 
 
-def formatText(color='black', text=''):
+def format_text(color='black', text=''):
     """Perform some basic formatting on text."""
     return f'<font color="{color}">{text}</font>'.replace('\n', '<br>')
 
 
-def CriticalError(parent=None, err=None):
+def critical_error(parent=None, err=None):
     """Display an error message."""
     QtWidgets.QMessageBox.critical(parent,
                                    'Error',
@@ -167,7 +167,7 @@ class ChatWindow(QtWidgets.QMainWindow):
                 data = aes_cipher.encrypt(data)
                 self.sock.sendall(data)
             except OSError as e:
-                CriticalError(self, f'Chat window->quit: {e}')
+                critical_error(self, f'Chat window->quit: {e}')
             finally:
                 self.sock.close()
         else:
@@ -196,14 +196,14 @@ class ChatWindow(QtWidgets.QMainWindow):
         # Encrypt the text
         data = aes_cipher.encrypt(text)
         if data is None:
-            CriticalError(self, 'unable to encrypt data.')
+            critical_error(self, 'unable to encrypt data.')
             exit(self.quit())
 
         # Send the text
         try:
             self.sock.sendall(data)
         except OSError as e:
-            CriticalError(self.window, e)
+            critical_error(self.window, e)
             exit(self.quit())
 
         # Decrypt the text
@@ -246,7 +246,7 @@ class ClientThread(QtCore.QThread):
         try:
             data = self.parent.sock.recv(BUFSIZ)
         except OSError as e:
-            CriticalError(self.parent, f'recv: {e}')
+            critical_error(self.parent, f'recv: {e}')
             exit(self.quit())
 
         # Make sure the other thread hasn't called quit yet
@@ -257,13 +257,13 @@ class ClientThread(QtCore.QThread):
         # Decrypt and decode the data
         decrypted = aes_cipher.decrypt(data)
         if decrypted is None:
-            CriticalError(self.parent, 'unable to decrypt message')
+            critical_error(self.parent, 'unable to decrypt message')
             exit(self.quit())
 
         msg = decrypted.decode('utf-8', 'ignore')
 
         # Add received text to chat field
-        self.parent.chat_view.append(formatText(color='blue', text=msg))
+        self.parent.chat_view.append(format_text(color='blue', text=msg))
 
         # The server closed, do NOT set ANNOUNCE_EXIT
         if msg == 'The lair is closed.':
@@ -274,7 +274,7 @@ class ClientThread(QtCore.QThread):
         try:
             self.parent.sock.connect(self.parent.conn[0])
         except OSError as e:
-            CriticalError(self.parent, e)
+            critical_error(self.parent, e)
             return self.quit()
 
         # Receive loop
