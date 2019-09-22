@@ -56,29 +56,29 @@ class ConnectionDialog(QtWidgets.QDialog):
         super().__init__()
 
         # Address
-        addressLabel = QtWidgets.QLabel('Server Address', self)
-        self.addressField = QtWidgets.QLineEdit(self)
-        self.addressField.setText('127.0.0.1')
+        address_label = QtWidgets.QLabel('Server Address', self)
+        self.address_field = QtWidgets.QLineEdit(self)
+        self.address_field.setText('127.0.0.1')
 
         # Port
-        portLabel = QtWidgets.QLabel('Server Port', self)
-        self.portField = QtWidgets.QLineEdit(self)
-        self.portField.setText('8888')
+        port_label = QtWidgets.QLabel('Server Port', self)
+        self.port_field = QtWidgets.QLineEdit(self)
+        self.port_field.setText('8888')
 
         # Click button
-        btnConnect = QtWidgets.QPushButton('Connect', self)
-        btnConnect.clicked.connect(self.set_host)
+        btn_connect = QtWidgets.QPushButton('Connect', self)
+        btn_connect.clicked.connect(self.set_host)
 
         # Create a vertical box layout
-        vbox = QtWidgets.QVBoxLayout()
-        vbox.addWidget(addressLabel)
-        vbox.addWidget(self.addressField)
-        vbox.addWidget(portLabel)
-        vbox.addWidget(self.portField)
-        vbox.addWidget(btnConnect)
+        v_box = QtWidgets.QVBoxLayout()
+        v_box.addWidget(address_label)
+        v_box.addWidget(self.address_field)
+        v_box.addWidget(port_label)
+        v_box.addWidget(self.port_field)
+        v_box.addWidget(btn_connect)
 
         # Set the layout
-        self.setLayout(vbox)
+        self.setLayout(v_box)
         self.setWindowTitle('Connect to Lair Server')
 
         self.conn = conn
@@ -87,73 +87,70 @@ class ConnectionDialog(QtWidgets.QDialog):
         """Get user input from the text fields.
 
         Set global host variables ADDR and PORT then exit dialog."""
-        addr = self.addressField.text()
-        port = int(self.portField.text())
-        self.conn.append((addr, port))
+        address = self.address_field.text()
+        port = int(self.port_field.text())
+        self.conn.append((address, port))
         self.accept()
 
 
 class ChatWindow(QtWidgets.QMainWindow):
     """Graphical chat window."""
-
     def __init__(self):
-        """Initialize the chat window.
-
-        Create all gui components.
-        """
+        """Initialize the chat window."""
         super().__init__()
+        self.chat_view = QtWidgets.QTextEdit()
+        self.chat_text_field = QtWidgets.QLineEdit(self)
+        self.window_frame = QtWidgets.QVBoxLayout(self)
         self.initUI()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.conn = []
 
     def initUI(self):
-        self.windowFrame = QtWidgets.QVBoxLayout(self)
+        """Create all gui components."""
+        exit_act = QtWidgets.QAction(QtGui.QIcon(''), 'Exit', self)
+        exit_act.setShortcut('Ctrl+Q')
+        exit_act.setStatusTip('Exit application')
+        exit_act.triggered.connect(self.close)
 
-        exitAct = QtWidgets.QAction(QtGui.QIcon(''), 'Exit', self)
-        exitAct.setShortcut('Ctrl+Q')
-        exitAct.setStatusTip('Exit application')
-        exitAct.triggered.connect(self.close)
+        conn_act = QtWidgets.QAction(QtGui.QIcon(''), 'Connect', self)
+        conn_act.setShortcut('F2')
+        conn_act.setStatusTip('Connect To a Lair')
+        conn_act.triggered.connect(self.connect)
 
-        connAct = QtWidgets.QAction(QtGui.QIcon(''), 'Connect', self)
-        connAct.triggered.connect(self.connect)
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('&File')
+        file_menu.addAction(conn_act)
+        file_menu.addAction(exit_act)
+        self.window_frame.addWidget(menu_bar)
 
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(connAct)
-        fileMenu.addAction(exitAct)
-        self.windowFrame.addWidget(menubar)
+        self.chat_text_field.resize(480, 100)
+        self.chat_text_field.move(10, 350)
 
-
-        self.chatTextField = QtWidgets.QLineEdit(self)
-        self.chatTextField.resize(480, 100)
-        self.chatTextField.move(10, 350)
-
-        btnSend = QtWidgets.QPushButton("Send", self)
-        btnSend.resize(480, 30)
-        btnSendFont = btnSend.font()
-        btnSendFont.setPointSize(12)
-        btnSend.setFont(btnSendFont)
-        btnSend.move(10, 460)
-        btnSend.clicked.connect(self.send)
+        btn_send = QtWidgets.QPushButton("Send", self)
+        btn_send.resize(480, 30)
+        btn_send_font = btn_send.font()
+        btn_send_font.setPointSize(12)
+        btn_send.setFont(btn_send_font)
+        btn_send.move(10, 460)
+        btn_send.clicked.connect(self.send)
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-        self.chatView = QtWidgets.QTextEdit()
-        self.chatView.setReadOnly(True)
-        splitter.addWidget(self.chatView)
-        splitter.addWidget(self.chatTextField)
+        self.chat_view.setReadOnly(True)
+        splitter.addWidget(self.chat_view)
+        splitter.addWidget(self.chat_text_field)
         splitter.setSizes([400, 100])
 
         splitter2 = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter2.addWidget(splitter)
-        splitter2.addWidget(btnSend)
+        splitter2.addWidget(btn_send)
         splitter2.setSizes([200, 10])
 
-        self.windowFrame.addWidget(splitter2)
+        self.window_frame.addWidget(splitter2)
         self.setCentralWidget(splitter2)
 
         self.setWindowTitle('The Lair')
         self.resize(500, 500)
-        self.chatTextField.setFocus()
+        self.chat_text_field.setFocus()
 
     def closeEvent(self, event):
         """Quit app when the window is closed."""
@@ -187,16 +184,16 @@ class ChatWindow(QtWidgets.QMainWindow):
     def send(self):
         """Send text to the lair server."""
         global ANNOUNCE_EXIT
-        text = self.chatTextField.text()
+        text = self.chat_text_field.text()
 
         if text == '{help}':
-            self.chatTextField.setText('')
+            self.chat_text_field.setText('')
             return self.help()
         elif text == '{quit}':
             ANNOUNCE_EXIT = True
             exit(self.quit())
 
-        # Encrpyt the text
+        # Encrypt the text
         data = cipher.encrypt(text)
         if data is None:
             CriticalError(self, 'unable to encrypt data.')
@@ -214,15 +211,15 @@ class ChatWindow(QtWidgets.QMainWindow):
         msg = decrypted.decode('utf-8', 'ignore')
 
         # Update UI
-        self.chatView.append(msg)
-        self.chatTextField.setText('')
+        self.chat_view.append(msg)
+        self.chat_text_field.setText('')
 
     def help(self):
         """Print a list of available commands."""
-        self.chatView.append('Available Commands:\n')
-        self.chatView.append('\t{help}:\tThis help menu')
-        self.chatView.append('\t{quit}:\tExit program')
-        self.chatView.append('\t{who}\tList of user names in the lair.')
+        self.chat_view.append('Available Commands:\n')
+        self.chat_view.append('\t{help}:\tThis help menu')
+        self.chat_view.append('\t{quit}:\tExit program')
+        self.chat_view.append('\t{who}\tList of user names in the lair.')
 
 
 class ClientThread(QtCore.QThread):
@@ -257,7 +254,7 @@ class ClientThread(QtCore.QThread):
         if ANNOUNCE_EXIT:
             exit(0)
 
-        # Decrypyt and decode the data
+        # Decrypt and decode the data
         decrypted = cipher.decrypt(data)
         if decrypted is None:
             CriticalError(self.parent, 'unable to decrypt message')
@@ -265,8 +262,8 @@ class ClientThread(QtCore.QThread):
 
         msg = decrypted.decode('utf-8', 'ignore')
 
-        # add recieved text to chat field
-        self.parent.chatView.append(formatText(color='blue', text=msg))
+        # Add received text to chat field
+        self.parent.chat_view.append(formatText(color='blue', text=msg))
 
         # The server closed, do NOT set ANNOUNCE_EXIT
         if msg == 'The lair is closed.':
@@ -280,7 +277,7 @@ class ClientThread(QtCore.QThread):
             CriticalError(self.parent, e)
             return self.quit()
 
-        # recieve loop
+        # Receive loop
         while not ANNOUNCE_EXIT:
             self.recveive()
 

@@ -59,7 +59,7 @@ def main():
     lair_options.add_argument(
         'session_type',
         type=str,
-        help='specifies wether to run a server or client session')
+        help='specifies whether to run a server or client session')
 
     lair_options.add_argument(
         'address',
