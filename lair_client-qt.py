@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 import socket
 from PyQt5 import QtCore, QtGui, QtWidgets
-from modules.AESCipher import cipher
+from modules.AESCipher import aes_cipher
 
 
 # Global variables
@@ -164,7 +164,7 @@ class ChatWindow(QtWidgets.QMainWindow):
         if ANNOUNCE_EXIT:
             try:
                 data = '{quit}'
-                data = cipher.encrypt(data)
+                data = aes_cipher.encrypt(data)
                 self.sock.sendall(data)
             except OSError as e:
                 CriticalError(self, f'Chat window->quit: {e}')
@@ -194,7 +194,7 @@ class ChatWindow(QtWidgets.QMainWindow):
             exit(self.quit())
 
         # Encrypt the text
-        data = cipher.encrypt(text)
+        data = aes_cipher.encrypt(text)
         if data is None:
             CriticalError(self, 'unable to encrypt data.')
             exit(self.quit())
@@ -207,7 +207,7 @@ class ChatWindow(QtWidgets.QMainWindow):
             exit(self.quit())
 
         # Decrypt the text
-        decrypted = cipher.decrypt(data)
+        decrypted = aes_cipher.decrypt(data)
         msg = decrypted.decode('utf-8', 'ignore')
 
         # Update UI
@@ -255,7 +255,7 @@ class ClientThread(QtCore.QThread):
             exit(0)
 
         # Decrypt and decode the data
-        decrypted = cipher.decrypt(data)
+        decrypted = aes_cipher.decrypt(data)
         if decrypted is None:
             CriticalError(self.parent, 'unable to decrypt message')
             exit(self.quit())

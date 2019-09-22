@@ -7,7 +7,7 @@ The Lair: Client class for The Lair chat application.
 import socket
 import selectors
 import sys
-from modules.AESCipher import cipher
+from modules.AESCipher import aes_cipher
 
 
 class ChatClient():
@@ -74,7 +74,7 @@ class ChatClient():
             return
 
         # Print the message
-        decrypted = cipher.decrypt(data)
+        decrypted = aes_cipher.decrypt(data)
         if decrypted is None:
             return
         msg = decrypted.decode('utf-8', 'ignore')
@@ -95,7 +95,7 @@ class ChatClient():
             return
 
         # Encrypt the message
-        msg = cipher.encrypt(msg)
+        msg = aes_cipher.encrypt(msg)
         if msg is None:
             return
 
@@ -107,7 +107,7 @@ class ChatClient():
             sys.exit(1)
 
         # Decrypt the message
-        msg = cipher.decrypt(msg)
+        msg = aes_cipher.decrypt(msg)
 
         # Decode the message and check if the user wants to quit
         if msg.decode('utf-8', 'ignore') == '{quit}':

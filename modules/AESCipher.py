@@ -62,4 +62,4 @@ class AESCipher:
 
 
 # Create an AESCipher object
-cipher = AESCipher('BewareTheBlackGuardian')
+aes_cipher = AESCipher('BewareTheBlackGuardian')

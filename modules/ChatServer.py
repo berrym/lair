@@ -12,7 +12,7 @@ import threading
 import selectors
 import socket
 import datetime
-from modules.AESCipher import cipher
+from modules.AESCipher import aes_cipher
 
 
 logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
@@ -188,7 +188,7 @@ class ChatServer():
                 return False
 
             # Decrypt and decode data
-            nick = cipher.decrypt(nick)
+            nick = aes_cipher.decrypt(nick)
             if nick is None:
                 self.remove_client(sock, nick)
                 return False
@@ -209,7 +209,7 @@ class ChatServer():
     def broadcast_to_all(self, msg, omit_client=None):
         """Broadcast a message to clients."""
         # Create the encrypted message
-        msg = cipher.encrypt(msg)
+        msg = aes_cipher.encrypt(msg)
         if msg is None:
             self.remove_client(omit_client, self.nicks[omit_client])
             return
@@ -237,7 +237,7 @@ class ChatServer():
     def broadcast_to_client(self, msg, sock):
         """Broadcast a message to a single client."""
         # Create the encrypted message
-        msg = cipher.encrypt(msg)
+        msg = aes_cipher.encrypt(msg)
         if msg is None:
             self.remove_client(sock, self.nicks[sock])
             return
@@ -261,7 +261,7 @@ class ChatServer():
                 return
 
             # Decrypt and decode the message
-            decrypted = cipher.decrypt(data)
+            decrypted = aes_cipher.decrypt(data)
             if decrypted is None:
                 self.remove_client(sock, nick)
                 return
