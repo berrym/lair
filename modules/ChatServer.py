@@ -280,7 +280,7 @@ class ChatServer():
                 minute = str(dtime.minute).zfill(2)
                 sec = str(dtime.second).zfill(2)
                 timestamp = f'{hour}:{minute}:{sec}'
-                prefix = f'[{timestamp}]\n{nick}' + ': '
+                prefix = f'[{timestamp}]\n{nick}: '
                 self.broadcast_to_all(msg, sock, prefix)
 
     def remove_client(self, sock, nick):
