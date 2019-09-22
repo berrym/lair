@@ -206,17 +206,16 @@ class ChatServer():
                 logging.info(f'{self.addrs[sock]} logged in as {nick}')
                 return nick
 
-    def broadcast_to_all(self, msg, omit_client=None, prefix=''):
+    def broadcast_to_all(self, msg, omit_client=None):
         """Broadcast a message to clients."""
         # Create the encrypted message
-        msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
         if msg is None:
             self.remove_client(omit_client, self.nicks[omit_client])
             return
 
         # Check message length, if too long inform client
-        if len(msg) >= self.BUFSIZ:
+        if len(msg) >= self.BUFSIZ and omit_client:
             msg = 'Message was too long to send.'
             self.broadcast_to_client(msg, omit_client)
             return
@@ -235,10 +234,9 @@ class ChatServer():
                 msg = f'{self.nicks[sock]}'
                 self.remove_client(sock, msg)
 
-    def broadcast_to_client(self, msg, sock, prefix=''):
+    def broadcast_to_client(self, msg, sock):
         """Broadcast a message to a single client."""
         # Create the encrypted message
-        msg = str(prefix) + str(msg)
         msg = cipher.encrypt(msg)
         if msg is None:
             self.remove_client(sock, self.nicks[sock])
@@ -275,13 +273,14 @@ class ChatServer():
             elif msg == '{who}':
                 self.tell_who(sock)
             else:
-                dtime = datetime.datetime.utcnow()
+                dtime = datetime.datetime.now()
                 hour = str(dtime.hour).zfill(2)
                 minute = str(dtime.minute).zfill(2)
                 sec = str(dtime.second).zfill(2)
                 timestamp = f'{hour}:{minute}:{sec}'
                 prefix = f'[{timestamp}]\n{nick}: '
-                self.broadcast_to_all(msg, sock, prefix)
+                msg = f'{prefix}{msg}'
+                self.broadcast_to_all(msg, sock)
 
     def remove_client(self, sock, nick):
         """Remove a client connection."""
