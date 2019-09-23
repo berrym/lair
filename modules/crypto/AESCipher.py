@@ -4,14 +4,14 @@ AES Cipher class for encrypting and decrypting string data.
 """
 
 
-import os
-import logging
 import base64
 import hashlib
-from Cryptodome.Random import get_random_bytes
-from Cryptodome.Cipher import AES
-from Cryptodome.Util.Padding import pad, unpad
+import logging
+import os
 
+from Cryptodome.Cipher import AES
+from Cryptodome.Random import get_random_bytes
+from Cryptodome.Util.Padding import pad, unpad
 
 logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 

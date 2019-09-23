@@ -4,16 +4,16 @@ The Lair: Server class for multithreaded (asynchronous) chat application.
 """
 
 
-import os
-import sys
-import time
+import datetime
 import logging
-import threading
+import os
 import selectors
 import socket
-import datetime
-from modules.crypto.AESCipher import aes_cipher
+import sys
+import threading
+import time
 
+from modules.crypto.AESCipher import aes_cipher
 
 logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 

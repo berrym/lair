@@ -5,8 +5,9 @@ Client thread class for qt gui client.
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from modules.gui.utility import *
+
 from modules.crypto.AESCipher import aes_cipher
+from modules.gui.utility import *
 
 
 class ClientThread(QtCore.QThread):

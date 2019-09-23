@@ -22,11 +22,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
-import sys
 import argparse
-from modules.cli.ChatServer import ChatServer
-from modules.cli.ChatClient import ChatClient
+import sys
 
+from modules.cli.ChatClient import ChatClient
+from modules.cli.ChatServer import ChatServer
 
 # Program name
 prog = sys.argv[0]
