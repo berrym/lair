@@ -35,11 +35,11 @@ class ChatServer():
             self.nicks: Dictionary of socket->nick
             self.addrs: Dictionary of socket->address
             self.threads: Dictionary of client threads, socket->thread
-            self.BUFSIZ: Buffer size for packets being sent/recieved
+            self.BUFSIZ: Buffer size for packets being sent/received
             self.server: Socket used for communications
             self.sel: Default I/O multiplexing selector
             ADDR: Tuple value of (host, port)
-            MAX_QUEUE: Maximum number of queued connectiions
+            MAX_QUEUE: Maximum number of queued connections
 
         Class Methods:
             run: Run the chat server
@@ -52,7 +52,7 @@ class ChatServer():
             get_nick: Get a unique nickname
             broadcast_to_all: Broadcast a message to all clients
             broadcast_to_client: Broadcast a message to a client
-            client_thread_loop: Send/Recieve loop for client
+            client_thread_loop: Send/Receive loop for client
             remove_client: Remove a client connection
             tell_who: Send a list of all connected users to a client
         """
@@ -189,7 +189,7 @@ class ChatServer():
             # Decrypt and decode data
             decrypted = aes_cipher.decrypt(data)
             if decrypted is None:
-                self.remove_client(sock, decrypted)
+                self.remove_client(sock, None)
                 return False
             nick = decrypted.decode('utf-8', 'ignore')
 
@@ -293,8 +293,9 @@ class ChatServer():
             del self.nicks[sock]
 
         # Broadcast departure
-        msg = f'{nick} has left the lair.'
-        self.broadcast_to_all(msg, sock)
+        if nick is not None:
+            msg = f'{nick} has left the lair.'
+            self.broadcast_to_all(msg, sock)
 
         # Make sure client is disconnected
         try:
