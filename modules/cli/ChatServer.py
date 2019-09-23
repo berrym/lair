@@ -181,17 +181,17 @@ class ChatServer():
         """Get a unique nickname from the client."""
         while True:
             try:
-                nick = sock.recv(self.BUFSIZ)
+                data = sock.recv(self.BUFSIZ)
             except OSError as e:
                 logging.warning(f'Error: {e}')
                 return False
 
             # Decrypt and decode data
-            nick = aes_cipher.decrypt(nick)
-            if nick is None:
-                self.remove_client(sock, nick)
+            decrypted = aes_cipher.decrypt(data)
+            if decrypted is None:
+                self.remove_client(sock, decrypted)
                 return False
-            nick = nick.decode('utf-8', 'ignore')
+            nick = decrypted.decode('utf-8', 'ignore')
 
             # Verify nickname
             if nick in self.nicks.values():
