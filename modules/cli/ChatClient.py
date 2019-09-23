@@ -7,7 +7,7 @@ The Lair: Client class for The Lair chat application.
 import socket
 import selectors
 import sys
-from modules.AESCipher import aes_cipher
+from modules.crypto.AESCipher import aes_cipher
 
 
 class ChatClient():

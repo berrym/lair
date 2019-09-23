@@ -12,7 +12,7 @@ import threading
 import selectors
 import socket
 import datetime
-from modules.AESCipher import aes_cipher
+from modules.crypto.AESCipher import aes_cipher
 
 
 logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')

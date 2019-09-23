@@ -24,8 +24,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 import argparse
-from modules.ChatServer import ChatServer
-from modules.ChatClient import ChatClient
+from modules.cli.ChatServer import ChatServer
+from modules.cli.ChatClient import ChatClient
 
 
 # Program name
