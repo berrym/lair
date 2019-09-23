@@ -21,7 +21,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import argparse
 import sys
 
@@ -33,8 +32,9 @@ prog = sys.argv[0]
 prog.replace('./', '')
 
 
-def sigint_catch(func):
+def catch_keyboard_interrupt(func):
     """Catch keyboard interrupt and exit process."""
+
     def wrapper(*args, **kwargs):
         """Wrapper around func to catch keyboard interrupt."""
         try:
@@ -46,7 +46,7 @@ def sigint_catch(func):
     return wrapper
 
 
-@sigint_catch
+@catch_keyboard_interrupt
 def main():
     """Main Function."""
     # Create a command line argument parser

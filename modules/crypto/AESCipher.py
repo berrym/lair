@@ -3,7 +3,6 @@
 AES Cipher class for encrypting and decrypting string data.
 """
 
-
 import base64
 import hashlib
 import logging
@@ -19,12 +18,13 @@ logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)-15s [%(threadName)-12s]'
-    + '[%(levelname)-8s]  %(message)s',
+           + '[%(levelname)-8s]  %(message)s',
     handlers=[logging.FileHandler(logfilename), logging.StreamHandler()])
 
 
-def catch_common_errors(func):
+def catch_common_exceptions(func):
     """Catch common exceptions."""
+
     def wrapper(*args, **kwargs):
         """Wrap around func and catch common exceptions."""
         try:
@@ -44,7 +44,7 @@ class AESCipher:
         """Make a fixed sha256 bit length key."""
         self.key = hashlib.sha256(key.encode('utf-8')).digest()
 
-    @catch_common_errors
+    @catch_common_exceptions
     def encrypt(self, raw_data):
         """Encrypt raw data."""
         raw_data = pad(raw_data.encode('utf-8'), AES.block_size)
@@ -52,7 +52,7 @@ class AESCipher:
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw_data))
 
-    @catch_common_errors
+    @catch_common_exceptions
     def decrypt(self, enc_data):
         """Decrypt encoded data."""
         enc_data = base64.b64decode(enc_data)

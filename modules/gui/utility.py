@@ -3,6 +3,8 @@
 Common variables and functions for the gui classes.
 """
 
+from PyQt5 import QtWidgets
+
 # Global variables
 ANNOUNCE_EXIT = False
 

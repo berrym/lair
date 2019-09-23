@@ -21,10 +21,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-
 import sys
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtWidgets
 
 from modules.gui.ChatWindow import ChatWindow
 

@@ -15,6 +15,7 @@ from modules.gui.utility import *
 
 class ChatWindow(QtWidgets.QMainWindow):
     """Graphical chat window."""
+
     def __init__(self):
         """Initialize the chat window."""
         super().__init__()

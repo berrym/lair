@@ -47,7 +47,7 @@ class ConnectionDialog(QtWidgets.QDialog):
     def set_host(self):
         """Get user input from the text fields.
 
-        Set global host variables ADDR and PORT then exit dialog."""
+        Set parent host variables address and port then exit dialog."""
         address = self.address_field.text()
         port = int(self.port_field.text())
         self.conn.append((address, port))

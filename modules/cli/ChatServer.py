@@ -3,7 +3,6 @@
 The Lair: Server class for multithreaded (asynchronous) chat application.
 """
 
-
 import datetime
 import logging
 import os
@@ -21,7 +20,7 @@ logfilename = os.path.join(os.path.expanduser('~'), '.lair.log')
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)-15s [%(threadName)-12s]'
-    + '[%(levelname)-8s]  %(message)s',
+           + '[%(levelname)-8s]  %(message)s',
     handlers=[logging.FileHandler(logfilename), logging.StreamHandler()])
 
 

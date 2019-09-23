@@ -3,7 +3,6 @@
 The Lair: Client class for The Lair chat application.
 """
 
-
 import selectors
 import socket
 import sys
