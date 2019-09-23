@@ -73,6 +73,8 @@ class ChatWindow(QtWidgets.QMainWindow):
         self.resize(500, 500)
         self.chat_text_field.setFocus()
 
+        self.statusBar()
+
     def closeEvent(self, event):
         """Quit app when the window is closed."""
         self.quit()
