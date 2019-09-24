@@ -33,7 +33,7 @@ prog = sys.argv[0]
 prog.replace('./', '')
 
 
-def catch_keyboard_interrupt(func: Any) -> Any:
+def catch_keyboard_interrupt(func: Callable) -> Any:
     """Catch keyboard interrupt and exit process."""
 
     def wrapper(*args, **kwargs) -> Any:
