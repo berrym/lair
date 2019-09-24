@@ -81,21 +81,21 @@ class ChatClient():
             return
 
         # Encrypt the message
-        msg = aes_cipher.encrypt(msg)
-        if msg is None:
+        b_msg = aes_cipher.encrypt(msg)
+        if b_msg is None:
             return
 
         # Send the message
         try:
-            self.server.sendall(msg)
+            self.server.sendall(b_msg)
         except OSError as e:
             print(f'Error: {e}')
             sys.exit(1)
 
         # Decrypt the message
-        msg = aes_cipher.decrypt(msg)
+        d_msg = aes_cipher.decrypt(b_msg)
 
         # Decode the message and check if the user wants to quit
-        if msg.decode('utf-8', 'ignore') == '{quit}':
+        if d_msg.decode('utf-8', 'ignore') == '{quit}':
             self.exit_flag = True
             return

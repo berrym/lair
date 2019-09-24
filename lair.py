@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
 import sys
+from typing import *
 
 from modules.cli.ChatClient import ChatClient
 from modules.cli.ChatServer import ChatServer
@@ -32,10 +33,10 @@ prog = sys.argv[0]
 prog.replace('./', '')
 
 
-def catch_keyboard_interrupt(func):
+def catch_keyboard_interrupt(func: Any) -> Any:
     """Catch keyboard interrupt and exit process."""
 
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         """Wrapper around func to catch keyboard interrupt."""
         try:
             result = func(*args, **kwargs)
@@ -47,7 +48,7 @@ def catch_keyboard_interrupt(func):
 
 
 @catch_keyboard_interrupt
-def main():
+def main() -> None:
     """Main Function."""
     # Create a command line argument parser
     parser = argparse.ArgumentParser(

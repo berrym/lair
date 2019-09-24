@@ -181,18 +181,20 @@ class ChatServer():
                 return nick
 
     def broadcast_to_all(self,
-                         msg: str, omit_client: socket.socket = None) -> None:
+                         msg: str,
+                         omit_client: Union[socket.socket, None] = None) \
+            -> None:
         """Broadcast a message to clients."""
         # Create the encrypted message
-        msg = aes_cipher.encrypt(msg)
-        if msg is None:
+        b_msg = aes_cipher.encrypt(msg)
+        if b_msg is None and omit_client:
             self.remove_client(omit_client, self.nicks[omit_client])
             return
 
         # Check message length, if too long inform client
-        if len(msg) >= self.BUFSIZ and omit_client:
-            msg = 'Message was too long to send.'
-            self.broadcast_to_client(msg, omit_client)
+        if len(b_msg) >= self.BUFSIZ and omit_client:
+            b_msg = 'Message was too long to send.'
+            self.broadcast_to_client(b_msg, omit_client)
             return
 
         # Broadcast message
@@ -203,7 +205,7 @@ class ChatServer():
 
             # Send message
             try:
-                sock.sendall(msg)
+                sock.sendall(b_msg)
             except OSError as e:
                 logging.warning(f'Broadcast error: {e}')
                 msg = f'{self.nicks[sock]}'
@@ -212,14 +214,14 @@ class ChatServer():
     def broadcast_to_client(self, msg: str, sock: socket.socket) -> None:
         """Broadcast a message to a single client."""
         # Create the encrypted message
-        msg = aes_cipher.encrypt(msg)
-        if msg is None:
+        b_msg = aes_cipher.encrypt(msg)
+        if b_msg is None:
             self.remove_client(sock, self.nicks[sock])
             return
 
         # Send message
         try:
-            sock.sendall(msg)
+            sock.sendall(b_msg)
         except OSError as e:
             logging.warning(f'Broadcast error: {e}')
             msg = f'{self.nicks[sock]}'
