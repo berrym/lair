@@ -11,6 +11,7 @@ import socket
 import sys
 import threading
 import time
+from socket import socket
 
 from modules.crypto.AESCipher import aes_cipher
 
@@ -28,34 +29,8 @@ class ChatServer():
     """A simple chatroom server."""
 
     def __init__(self, host, port):
-        """Initialize the chat server.
+        """Initialize the chat server."""
 
-        Important variables set:
-            self.exit_flag: Boolean value, when true the server should exit
-            self.nicks: Dictionary of socket->nick
-            self.addrs: Dictionary of socket->address
-            self.threads: Dictionary of client threads, socket->thread
-            self.BUFSIZ: Buffer size for packets being sent/received
-            self.server: Socket used for communications
-            self.sel: Default I/O multiplexing selector
-            ADDR: Tuple value of (host, port)
-            MAX_QUEUE: Maximum number of queued connections
-
-        Class Methods:
-            run: Run the chat server
-            event_loop: Select between registered events
-            admin_input: Accept commands from administrator
-            close_server: Shutdown the chat server
-            who: Print a list of connected clients
-            spawn_client: Spawn a new client thread
-            handle_client: Handle client connection
-            get_nick: Get a unique nickname
-            broadcast_to_all: Broadcast a message to all clients
-            broadcast_to_client: Broadcast a message to a client
-            client_thread_loop: Send/Receive loop for client
-            remove_client: Remove a client connection
-            tell_who: Send a list of all connected users to a client
-        """
         self.exit_flag = False
         self.nicks = {}
         self.addrs = {}
@@ -104,7 +79,7 @@ class ChatServer():
                 callback(key.fileobj, mask)
 
     def admin_input(self, key, mask):
-        """Read from sys.stdin for administrative commands."""
+        """Read from standard input for administrative commands."""
         command = input('')
         if command == 'quit':
             self.close_server()
@@ -115,14 +90,14 @@ class ChatServer():
 
     def close_server(self):
         """Shutdown the chat server."""
-        # Say goobye
+        # Say goodbye
         self.broadcast_to_all('The lair is closed.')
 
         # Close the server
         try:
             self.server.close()
         except OSError as e:
-            logging.warn(f'Error: {e}')
+            logging.warning(f'Error: {e}')
         finally:
             # Clean up selector
             self.sel.unregister(self.server)
@@ -143,7 +118,8 @@ class ChatServer():
         try:
             sock, addr = self.server.accept()
         except OSError as e:
-            print(f'Error: {e}')
+            logging.warning(f'Error: {e}')
+            return
 
         logging.info(f'{addr} has connected')
 
@@ -301,7 +277,7 @@ class ChatServer():
         try:
             sock.close()
         except OSError as e:
-            logging.warn(f'remove_client: {e}')
+            logging.warning(f'remove_client: {e}')
 
     def tell_who(self, sock):
         """Send a list of connected users to a client."""

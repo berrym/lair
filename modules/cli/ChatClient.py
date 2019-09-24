@@ -14,21 +14,8 @@ class ChatClient():
     """Create a chat client."""
 
     def __init__(self, host, port):
-        """Create a chat client connection.
+        """Create a chat client connection."""
 
-        Variables of importance:
-            self.exit_flag: Boolean value, if true the client should close
-            self.BUFSIZ: Buffer size for packet sending/recieving
-            self.server: Socket connection to the server
-            self.sel: Default I/O multiplexing selector
-            ADDR: Tuple value of server's (host, port)
-
-        Class Methods:
-            run: Run a client session
-            event_loop: Select between registered events
-            read_server: Read messages from the chat server
-            user_input: Read input from the user
-        """
         self.exit_flag = False
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
