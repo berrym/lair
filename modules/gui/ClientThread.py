@@ -12,7 +12,7 @@ from modules.gui.utility import *
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
-    def __init__(self, parent):
+    def __init__(self, parent: QtWidgets.QMainWindow):
         """Initialize the thread."""
         QtCore.QThread.__init__(self, parent)
         self.parent = parent

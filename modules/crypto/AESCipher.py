@@ -7,6 +7,7 @@ import base64
 import hashlib
 import logging
 import os
+from typing import *
 
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
@@ -40,22 +41,22 @@ def catch_common_exceptions(func):
 class AESCipher:
     """Implement AES Cipher Block Chaining encryption and decryption."""
 
-    def __init__(self, key):
+    def __init__(self, key: str) -> None:
         """Make a fixed sha256 bit length key."""
         self.key = hashlib.sha256(key.encode('utf-8')).digest()
 
     @catch_common_exceptions
-    def encrypt(self, raw_data):
+    def encrypt(self, rawdata: str) -> bytes:
         """Encrypt raw data."""
-        raw_data = pad(raw_data.encode('utf-8'), AES.block_size)
+        raw_data = pad(rawdata.encode('utf-8'), AES.block_size)
         iv = get_random_bytes(AES.block_size)
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return base64.b64encode(iv + cipher.encrypt(raw_data))
 
     @catch_common_exceptions
-    def decrypt(self, enc_data):
+    def decrypt(self, encdata: bytes) -> bytes:
         """Decrypt encoded data."""
-        enc_data = base64.b64decode(enc_data)
+        enc_data = base64.b64decode(encdata)
         iv = enc_data[:AES.block_size]
         cipher = AES.new(self.key, AES.MODE_CBC, iv)
         return unpad(cipher.decrypt(enc_data[AES.block_size:]), AES.block_size)

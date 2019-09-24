@@ -11,7 +11,7 @@ import socket
 import sys
 import threading
 import time
-from socket import socket
+from typing import *
 
 from modules.crypto.AESCipher import aes_cipher
 
@@ -26,14 +26,13 @@ logging.basicConfig(
 
 
 class ChatServer():
-    """A simple chatroom server."""
+    """A simple chat room server."""
 
-    def __init__(self, host, port):
+    def __init__(self, host: str, port: int) -> None:
         """Initialize the chat server."""
-
         self.exit_flag = False
-        self.nicks = {}
-        self.addrs = {}
+        self.nicks: Dict[socket.socket, str] = {}
+        self.addrs: Dict[socket.socket, Tuple[str, int]] = {}
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
         MAX_QUEUE = 5
@@ -53,7 +52,7 @@ class ChatServer():
         self.sel.register(self.server, selectors.EVENT_READ, self.spawn_client)
         self.sel.register(sys.stdin, selectors.EVENT_READ, self.admin_input)
 
-    def run(self):
+    def run(self) -> None:
         """Run the chat server."""
         # Start the main thread
         logging.info('Starting main thread, waiting for connections')
@@ -68,7 +67,7 @@ class ChatServer():
 
         logging.info('Main thread exited')
 
-    def event_loop(self):
+    def event_loop(self) -> None:
         """Select between reading from server socket and standard input."""
         while not self.exit_flag:
             logging.info('Executing event loop')
@@ -78,7 +77,7 @@ class ChatServer():
                 callback = key.data
                 callback(key.fileobj, mask)
 
-    def admin_input(self, key, mask):
+    def admin_input(self, key: selectors.SelectorKey, mask) -> None:
         """Read from standard input for administrative commands."""
         command = input('')
         if command == 'quit':
@@ -88,7 +87,7 @@ class ChatServer():
         else:
             print(f'error: unknown command {command}')
 
-    def close_server(self):
+    def close_server(self) -> None:
         """Shutdown the chat server."""
         # Say goodbye
         self.broadcast_to_all('The lair is closed.')
@@ -107,13 +106,13 @@ class ChatServer():
             # Set the exit flag
             self.exit_flag = True
 
-    def who(self):
+    def who(self) -> None:
         """Print a list of all connected clients."""
         print('{:*^60}'.format(' The lair dwellers! '))
         for nick, addr in zip(self.nicks.values(), self.addrs.values()):
             print(f'{nick} at {addr}')
 
-    def spawn_client(self, key, mask):
+    def spawn_client(self, key: selectors.SelectorKey, mask) -> None:
         """Spawn a new client thread."""
         try:
             sock, addr = self.server.accept()
@@ -130,14 +129,14 @@ class ChatServer():
 
         # Start the new thread
         logging.info(f'Starting a client thread for {addr}')
-        threading.Thread(target=self.handle_client, args=(sock,)).start()
+        threading.Thread(target = self.handle_client, args = (sock,)).start()
         logging.info(f'Client thread for {addr} started')
 
-    def handle_client(self, sock):
+    def handle_client(self, sock: socket.socket) -> None:
         """Handles a single client connection."""
         # Get a unique nickname from the client
         nick = self.get_nick(sock)
-        if nick:
+        if nick is not '':
             self.nicks[sock] = nick
         else:
             return
@@ -153,20 +152,20 @@ class ChatServer():
         # Start sending/recieving messages with client thread
         self.client_thread_loop(sock, nick)
 
-    def get_nick(self, sock):
+    def get_nick(self, sock: socket.socket) -> str:
         """Get a unique nickname from the client."""
         while True:
             try:
                 data = sock.recv(self.BUFSIZ)
             except OSError as e:
                 logging.warning(f'Error: {e}')
-                return False
+                return ''
 
             # Decrypt and decode data
             decrypted = aes_cipher.decrypt(data)
             if decrypted is None:
-                self.remove_client(sock, None)
-                return False
+                self.remove_client(sock, '')
+                return ''
             nick = decrypted.decode('utf-8', 'ignore')
 
             # Verify nickname
@@ -181,7 +180,8 @@ class ChatServer():
                 logging.info(f'{self.addrs[sock]} logged in as {nick}')
                 return nick
 
-    def broadcast_to_all(self, msg, omit_client=None):
+    def broadcast_to_all(self,
+                         msg: str, omit_client: socket.socket = None) -> None:
         """Broadcast a message to clients."""
         # Create the encrypted message
         msg = aes_cipher.encrypt(msg)
@@ -209,7 +209,7 @@ class ChatServer():
                 msg = f'{self.nicks[sock]}'
                 self.remove_client(sock, msg)
 
-    def broadcast_to_client(self, msg, sock):
+    def broadcast_to_client(self, msg: str, sock: socket.socket) -> None:
         """Broadcast a message to a single client."""
         # Create the encrypted message
         msg = aes_cipher.encrypt(msg)
@@ -225,7 +225,7 @@ class ChatServer():
             msg = f'{self.nicks[sock]}'
             self.remove_client(sock, msg)
 
-    def client_thread_loop(self, sock, nick):
+    def client_thread_loop(self, sock: socket.socket, nick: str):
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
@@ -257,7 +257,7 @@ class ChatServer():
                 msg = f'{prefix}{msg}'
                 self.broadcast_to_all(msg, sock)
 
-    def remove_client(self, sock, nick):
+    def remove_client(self, sock: socket.socket, nick: str) -> None:
         """Remove a client connection."""
         logging.info(f'{self.addrs[sock]} has disconnected.')
 
@@ -269,7 +269,7 @@ class ChatServer():
             del self.nicks[sock]
 
         # Broadcast departure
-        if nick is not None:
+        if nick is not '':
             msg = f'{nick} has left the lair.'
             self.broadcast_to_all(msg, sock)
 
@@ -279,7 +279,7 @@ class ChatServer():
         except OSError as e:
             logging.warning(f'remove_client: {e}')
 
-    def tell_who(self, sock):
+    def tell_who(self, sock: socket.socket) -> None:
         """Send a list of connected users to a client."""
         for nick, addr in zip(self.nicks.values(), self.addrs.values()):
             msg = f'{nick} at {addr[0]}\n'

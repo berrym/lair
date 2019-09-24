@@ -80,7 +80,7 @@ class ChatWindow(QtWidgets.QMainWindow):
         self.quit()
         event.accept()
 
-    def quit(self, event=None):
+    def quit(self):
         """Exit the program."""
         global ANNOUNCE_EXIT
 

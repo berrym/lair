@@ -13,9 +13,8 @@ from modules.crypto.AESCipher import aes_cipher
 class ChatClient():
     """Create a chat client."""
 
-    def __init__(self, host, port):
+    def __init__(self, host: str, port: int) -> None:
         """Create a chat client connection."""
-
         self.exit_flag = False
         self.BUFSIZ = 4096
         self.sel = selectors.DefaultSelector()
@@ -33,7 +32,7 @@ class ChatClient():
         self.sel.register(self.server, selectors.EVENT_READ, self.read_server)
         self.sel.register(sys.stdin, selectors.EVENT_READ, self.user_input)
 
-    def run(self):
+    def run(self) -> None:
         """Run a client session."""
         while not self.exit_flag:
             self.event_loop()
@@ -45,14 +44,14 @@ class ChatClient():
         self.server.shutdown(socket.SHUT_RDWR)
         self.server.close()
 
-    def event_loop(self):
+    def event_loop(self) -> None:
         """Select between reading from server socket and standard input."""
         events = self.sel.select()
         for key, mask in events:
             callback = key.data
             callback(key.fileobj, mask)
 
-    def read_server(self, key, mask):
+    def read_server(self, key: selectors.SelectorKey, mask) -> None:
         """Read messages from the chat server."""
         try:
             data = self.server.recv(self.BUFSIZ)
@@ -71,7 +70,7 @@ class ChatClient():
         if msg == 'The lair is closed.':
             self.exit_flag = True
 
-    def user_input(self, key, mask):
+    def user_input(self, key: selectors.SelectorKey, mask) -> None:
         """Read input from the user."""
         msg = input('')
         if msg == '{help}':
