@@ -21,7 +21,6 @@ class ChatWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.chat_view = QtWidgets.QTextEdit()
         self.chat_text_field = QtWidgets.QLineEdit(self)
-        self.window_frame = QtWidgets.QVBoxLayout(self)
         self.initUI()
         self.sock = socket(AF_INET, SOCK_STREAM)
         self.conn = []
@@ -48,7 +47,6 @@ class ChatWindow(QtWidgets.QMainWindow):
         file_menu = menu_bar.addMenu('&File')
         file_menu.addAction(conn_act)
         file_menu.addAction(exit_act)
-        self.window_frame.addWidget(menu_bar)
 
         help_menu = menu_bar.addMenu('&Help')
         help_menu.addAction(about_act)
@@ -76,7 +74,6 @@ class ChatWindow(QtWidgets.QMainWindow):
         splitter2.addWidget(btn_send)
         splitter2.setSizes([200, 10])
 
-        self.window_frame.addWidget(splitter2)
         self.setCentralWidget(splitter2)
 
         self.setWindowTitle('The Lair')
