@@ -7,7 +7,6 @@ import base64
 import hashlib
 import logging
 import os
-from typing import *
 
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes

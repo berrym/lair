@@ -3,9 +3,9 @@
 Main gui window for gui chat app.
 """
 
-import socket
+from socket import *
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui
 
 from modules.crypto.AESCipher import aes_cipher
 from modules.gui.ClientThread import ClientThread
@@ -23,7 +23,7 @@ class ChatWindow(QtWidgets.QMainWindow):
         self.chat_text_field = QtWidgets.QLineEdit(self)
         self.window_frame = QtWidgets.QVBoxLayout(self)
         self.initUI()
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket(AF_INET, SOCK_STREAM)
         self.conn = []
 
     def initUI(self):

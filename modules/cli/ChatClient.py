@@ -4,8 +4,8 @@ The Lair: Client class for The Lair chat application.
 """
 
 import selectors
-import socket
 import sys
+from socket import *
 
 from modules.crypto.AESCipher import aes_cipher
 
@@ -22,7 +22,7 @@ class ChatClient():
 
         # Connect to the server
         try:
-            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server = socket(AF_INET, SOCK_STREAM)
             self.server.connect(ADDR)
         except OSError as e:
             print(f'Error: {e}')
@@ -41,7 +41,7 @@ class ChatClient():
         self.sel.unregister(self.server)
         self.sel.unregister(sys.stdin)
         self.sel.close()
-        self.server.shutdown(socket.SHUT_RDWR)
+        self.server.shutdown(SHUT_RDWR)
         self.server.close()
 
     def event_loop(self) -> None:
