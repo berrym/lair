@@ -23,29 +23,23 @@ class ClientThread(QtCore.QThread):
 
     def quit(self):
         """Exit the program."""
-        exit(self.parent.quit())
+        self.parent.quit()
 
     def recveive(self):
         """Read data from server."""
-        BUFSIZ = 4096
-        global ANNOUNCE_EXIT
+        buf_size = 4096
 
         try:
-            data = self.parent.sock.recv(BUFSIZ)
+            data = self.parent.sock.recv(buf_size)
         except OSError as e:
             critical_error(self.parent, f'recv: {e}')
-            exit(self.quit())
-
-        # Make sure the other thread hasn't called quit yet
-        # If it has, stop executing this frame
-        if ANNOUNCE_EXIT:
-            exit(0)
+            self.quit()
 
         # Decrypt and decode the data
         decrypted = aes_cipher.decrypt(data)
         if decrypted is None:
             critical_error(self.parent, 'unable to decrypt message')
-            exit(self.quit())
+            self.quit()
 
         msg = decrypted.decode('utf-8', 'ignore')
 
@@ -54,7 +48,7 @@ class ClientThread(QtCore.QThread):
 
         # The server closed, do NOT set ANNOUNCE_EXIT
         if msg == 'The lair is closed.':
-            exit(self.quit())
+            self.quit()
 
     def run(self):
         """Run the client thread."""
@@ -65,5 +59,5 @@ class ClientThread(QtCore.QThread):
             return self.quit()
 
         # Receive loop
-        while not ANNOUNCE_EXIT:
+        while True:
             self.recveive()

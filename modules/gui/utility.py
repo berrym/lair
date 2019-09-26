@@ -5,9 +5,6 @@ Common variables and functions for the gui classes.
 
 from PyQt5 import QtWidgets
 
-# Global variables
-ANNOUNCE_EXIT = False
-
 
 def format_text(color='black', text=''):
     """Perform some basic formatting on text."""

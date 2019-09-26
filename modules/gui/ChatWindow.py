@@ -87,11 +87,9 @@ class ChatWindow(QtWidgets.QMainWindow):
         self.quit()
         event.accept()
 
-    def quit(self):
+    def quit(self, announce_exit=False):
         """Exit the program."""
-        global ANNOUNCE_EXIT
-
-        if ANNOUNCE_EXIT:
+        if announce_exit:
             try:
                 data = '{quit}'
                 data = aes_cipher.encrypt(data)
@@ -100,8 +98,6 @@ class ChatWindow(QtWidgets.QMainWindow):
                 critical_error(self, f'Chat window->quit: {e}')
             finally:
                 self.sock.close()
-        else:
-            ANNOUNCE_EXIT = True
 
         exit(0)
 
@@ -113,15 +109,14 @@ class ChatWindow(QtWidgets.QMainWindow):
 
     def send(self):
         """Send text to the lair server."""
-        global ANNOUNCE_EXIT
+        global announce_exit
         text = self.chat_text_field.text()
 
         if text == '{help}':
             self.chat_text_field.setText('')
             return self.help()
         elif text == '{quit}':
-            ANNOUNCE_EXIT = True
-            exit(self.quit())
+            self.quit(announce_exit=True)
 
         # Encrypt the text
         data = aes_cipher.encrypt(text)
