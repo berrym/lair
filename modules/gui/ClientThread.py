@@ -9,6 +9,12 @@ from modules.crypto.AESCipher import aes_cipher
 from modules.gui.utility import *
 
 
+class Communicate(QtCore.QObject):
+    """Communication breakdown!  Signal for communicating with main thread."""
+
+    close_app = QtCore.pyqtSignal()
+
+
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
@@ -16,6 +22,7 @@ class ClientThread(QtCore.QThread):
         """Initialize the thread."""
         QtCore.QThread.__init__(self, parent)
         self.parent = parent
+        self.communicator = Communicate()
 
     def __del__(self):
         """Thread cleanup."""

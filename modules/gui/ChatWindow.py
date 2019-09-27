@@ -19,6 +19,7 @@ class ChatWindow(QtWidgets.QMainWindow):
     def __init__(self):
         """Initialize the chat window."""
         super().__init__()
+        self.ct = ClientThread(self)
         self.chat_view = QtWidgets.QTextEdit()
         self.chat_text_field = QtWidgets.QLineEdit(self)
         self.initUI()
@@ -85,27 +86,17 @@ class ChatWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         """Quit app when the window is closed."""
         self.quit()
-        event.accept()
 
-    def quit(self, announce_exit=False):
+    def quit(self):
         """Exit the program."""
-        if announce_exit:
-            try:
-                data = '{quit}'
-                data = aes_cipher.encrypt(data)
-                self.sock.sendall(data)
-            except OSError as e:
-                critical_error(self, f'Chat window->quit: {e}')
-            finally:
-                self.sock.close()
-
         exit(0)
 
     def connect(self):
+        """Create a client connection in a new thread."""
         conn_win = ConnectionDialog(self.conn)
         conn_win.exec_()
-        ct = ClientThread(self)
-        ct.start()
+        self.ct.communicator.close_app.connect(self.close)
+        self.ct.start()
 
     def send(self):
         """Send text to the lair server."""
@@ -116,20 +107,20 @@ class ChatWindow(QtWidgets.QMainWindow):
             self.chat_text_field.setText('')
             return self.help()
         elif text == '{quit}':
-            self.quit(announce_exit=True)
+            self.ct.communicator.close_app.emit()
 
         # Encrypt the text
         data = aes_cipher.encrypt(text)
         if data is None:
             critical_error(self, 'unable to encrypt data.')
-            exit(self.quit())
+            self.quit()
 
         # Send the text
         try:
             self.sock.sendall(data)
         except OSError as e:
             critical_error(self.window, e)
-            exit(self.quit())
+            self.quit()
 
         # Decrypt the text
         decrypted = aes_cipher.decrypt(data)
