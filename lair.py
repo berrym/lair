@@ -22,7 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import argparse
+import os
 import sys
+import subprocess
 from typing import *
 
 from modules.cli.ChatClient import ChatClient
@@ -55,30 +57,66 @@ def main() -> None:
         description='The Lair Chat App',
         epilog='Copyright (C) 2019 Michael Berry')
 
+    # Lair options
     lair_options = parser.add_argument_group('Lair Arguments')
 
+    # Required option, either server or client
     lair_options.add_argument(
         'session_type',
         type=str,
-        help='specifies whether to run a server or client session')
+        help='specifies whether to run a "server" or "client" session')
 
-    lair_options.add_argument(
-        'address',
+    # Server options
+    server_options = parser.add_argument_group('Server Arguments')
+
+    server_options.add_argument(
+        '--address',
         type=str,
+        default='127.0.0.1',
         help='specifies the address the server will bind to')
 
-    lair_options.add_argument(
-        'port_number',
+    server_options.add_argument(
+        '--port',
         type=int,
+        default=8888,
         help='specifies which port the server will bind to')
+
+    # Client options
+    client_options = parser.add_argument_group('Client Arguments')
+
+    client_options.add_argument(
+        '--gui',
+        default=False,
+        action='store_true',
+        help='run the Qt gui client'
+    )
+
+    client_options.add_argument(
+        '--sa',
+        default='127.0.0.1',
+        type=str,
+        help='specifies the address of the server'
+    )
+
+    client_options.add_argument(
+        '--sp',
+        default=8888,
+        type=int,
+        help='specifies which port on the server to connect to'
+    )
 
     # Parse the command line
     args = parser.parse_args()
 
     if args.session_type == 'server':
-        ChatServer(args.address, args.port_number).run()
+        ChatServer(args.address, args.port).run()
     elif args.session_type == 'client':
-        ChatClient(args.address, args.port_number).run()
+        if not args.gui:
+            ChatClient(args.sa, args.sp).run()
+        else:
+            # exec gui client
+            subprocess.Popen(os.path.join(sys.path[0], 'lair_client-qt.py'))
+            return
     else:
         print(f'{prog}: error: session_type must be either server or client')
 
