@@ -18,10 +18,10 @@ class Communicate(QtCore.QObject):
 class ClientThread(QtCore.QThread):
     """Create a client thread for networking communications."""
 
-    def __init__(self, parent: QtWidgets.QMainWindow):
+    def __init__(self, main_win: QtWidgets.QMainWindow):
         """Initialize the thread."""
-        QtCore.QThread.__init__(self, parent)
-        self.parent = parent
+        QtCore.QThread.__init__(self, main_win)
+        self.parent = main_win
         self.communicator = Communicate()
 
     def __del__(self):
