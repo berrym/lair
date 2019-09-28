@@ -25,6 +25,15 @@ logging.basicConfig(
     handlers=[logging.FileHandler(logfilename), logging.StreamHandler()])
 
 
+def timestamp() -> str:
+    """Create a timestamp."""
+    d_time = datetime.datetime.now()
+    hour = str(d_time.hour).zfill(2)
+    minute = str(d_time.minute).zfill(2)
+    second = str(d_time.second).zfill(2)
+    return f'{hour}:{minute}:{second}'
+
+
 class ChatServer():
     """A simple chat room server."""
 
@@ -251,13 +260,7 @@ class ChatServer():
             elif msg == '{who}':
                 self.tell_who(sock)
             else:
-                dtime = datetime.datetime.now()
-                hour = str(dtime.hour).zfill(2)
-                minute = str(dtime.minute).zfill(2)
-                sec = str(dtime.second).zfill(2)
-                timestamp = f'{hour}:{minute}:{sec}'
-                prefix = f'[{timestamp}]\n{nick}: '
-                msg = f'{prefix}{msg}'
+                msg = f'[{timestamp()}]\n{nick}: {msg}'
                 self.broadcast_to_all(msg, sock)
 
     def remove_client(self, sock: socket, nick: str) -> None:
