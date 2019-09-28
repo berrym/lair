@@ -14,7 +14,11 @@ PyCryptodomex: pip install pycryptodomex
 
 For the GUI
 
-PyQt5: many ways to install including pip
+PyQt5: many ways to install including pip install PyQt5
+
+All requirements may be installed with the command
+
+pip3 -r requirements.txt
 
 BASIC USAGE
 
