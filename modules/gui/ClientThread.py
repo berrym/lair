@@ -6,7 +6,7 @@ Client thread class for qt gui client.
 from PyQt5 import QtCore
 
 from modules.crypto.AESCipher import aes_cipher
-from modules.gui.utility import *
+from modules.gui.GuiCommon import *
 
 
 class Communicate(QtCore.QObject):

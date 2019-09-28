@@ -1,4 +1,4 @@
-"""utility.py
+"""GuiCommon.py
 
 Common variables and functions for the gui classes.
 """

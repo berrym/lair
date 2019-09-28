@@ -10,7 +10,7 @@ from PyQt5 import QtCore, QtGui
 from modules.crypto.AESCipher import aes_cipher
 from modules.gui.ClientThread import ClientThread
 from modules.gui.ConnectionDialog import ConnectionDialog
-from modules.gui.utility import *
+from modules.gui.GuiCommon import *
 
 
 class ChatWindow(QtWidgets.QMainWindow):
