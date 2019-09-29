@@ -7,7 +7,7 @@ import selectors
 import sys
 from socket import *
 
-from modules.crypto.AESCipher import aes_cipher
+from lairchat.crypto.AESCipher import aes_cipher
 
 
 class ChatClient():

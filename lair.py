@@ -27,8 +27,8 @@ import sys
 import subprocess
 from typing import *
 
-from modules.cli.ChatClient import ChatClient
-from modules.cli.ChatServer import ChatServer
+from lairchat.cli.ChatClient import ChatClient
+from lairchat.cli.ChatServer import ChatServer
 
 # Program name
 prog = sys.argv[0]

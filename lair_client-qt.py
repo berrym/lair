@@ -25,7 +25,7 @@ import sys
 
 from PyQt5 import QtWidgets
 
-from modules.gui.ChatWindow import ChatWindow
+from lairchat.gui.ChatWindow import ChatWindow
 
 
 def main():

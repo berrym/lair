@@ -7,10 +7,10 @@ from socket import *
 
 from PyQt5 import QtCore, QtGui
 
-from modules.crypto.AESCipher import aes_cipher
-from modules.gui.ClientThread import ClientThread
-from modules.gui.ConnectionDialog import ConnectionDialog
-from modules.gui.GuiCommon import *
+from lairchat.crypto.AESCipher import aes_cipher
+from lairchat.gui.ClientThread import ClientThread
+from lairchat.gui.ConnectionDialog import ConnectionDialog
+from lairchat.gui.GuiCommon import *
 
 
 class ChatWindow(QtWidgets.QMainWindow):

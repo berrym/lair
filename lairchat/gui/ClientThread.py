@@ -5,8 +5,8 @@ Client thread class for qt gui client.
 
 from PyQt5 import QtCore
 
-from modules.crypto.AESCipher import aes_cipher
-from modules.gui.GuiCommon import *
+from lairchat.crypto.AESCipher import aes_cipher
+from lairchat.gui.GuiCommon import *
 
 
 class Communicate(QtCore.QObject):
