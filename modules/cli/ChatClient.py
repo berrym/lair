@@ -16,14 +16,13 @@ class ChatClient():
     def __init__(self, host: str, port: int) -> None:
         """Create a chat client connection."""
         self.exit_flag = False
-        self.BUFSIZ = 4096
+        self.buf_size = 4096
         self.sel = selectors.DefaultSelector()
-        ADDR = (host, port)
 
         # Connect to the server
         try:
             self.server = socket(AF_INET, SOCK_STREAM)
-            self.server.connect(ADDR)
+            self.server.connect((host, port))
         except OSError as e:
             print(f'Error: {e}')
             sys.exit(1)
@@ -54,26 +53,26 @@ class ChatClient():
     def read_server(self, key: selectors.SelectorKey, mask) -> None:
         """Read messages from the chat server."""
         try:
-            data = self.server.recv(self.BUFSIZ)
+            data = self.server.recv(self.buf_size)
         except OSError as e:
             print(f'Error: {e}')
             return
 
         # Print the message
-        decrypted = aes_cipher.decrypt(data)
-        if decrypted is None:
+        decrypted_data = aes_cipher.decrypt(data)
+        if decrypted_data is None:
             return
-        msg = decrypted.decode('utf-8', 'ignore')
-        print(msg)
+        message = decrypted_data.decode('utf-8', 'ignore')
+        print(message)
 
         # Check if the server closed
-        if msg == 'The lair is closed.':
+        if message == 'The lair is closed.':
             self.exit_flag = True
 
     def user_input(self, key: selectors.SelectorKey, mask) -> None:
         """Read input from the user."""
-        msg = input('')
-        if msg == '{help}':
+        message = input('')
+        if message == '{help}':
             print('{:*^40}'.format(' Available Commands '))
             print('{help}:\tThis help message')
             print('{who}:\tA list of connected users')
@@ -81,21 +80,21 @@ class ChatClient():
             return
 
         # Encrypt the message
-        b_msg = aes_cipher.encrypt(msg)
-        if b_msg is None:
+        encrypted_message = aes_cipher.encrypt(message)
+        if encrypted_message is None:
             return
 
         # Send the message
         try:
-            self.server.sendall(b_msg)
+            self.server.sendall(encrypted_message)
         except OSError as e:
             print(f'Error: {e}')
             sys.exit(1)
 
         # Decrypt the message
-        d_msg = aes_cipher.decrypt(b_msg)
+        decrypted_message = aes_cipher.decrypt(encrypted_message)
 
         # Decode the message and check if the user wants to quit
-        if d_msg.decode('utf-8', 'ignore') == '{quit}':
+        if decrypted_message.decode('utf-8', 'ignore') == '{quit}':
             self.exit_flag = True
             return
