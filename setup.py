@@ -8,5 +8,6 @@ setup(
     license='GPLv3',
     author='Michael Berry',
     author_email='trismegustis@gmail.com',
-    description='A small and simple chat application written in Python 3', install_requires=['PyQt5']
+    description='A small and simple chat application written in Python 3',
+    install_requires=['PyQt5', 'pycryptodomex']
 )
