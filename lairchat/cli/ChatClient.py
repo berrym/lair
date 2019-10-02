@@ -10,7 +10,7 @@ from socket import *
 from lairchat.crypto.AESCipher import aes_cipher
 
 
-class ChatClient():
+class ChatClient:
     """Create a chat client."""
 
     def __init__(self, host: str, port: int) -> None:

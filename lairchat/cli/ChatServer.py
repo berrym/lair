@@ -1,6 +1,6 @@
 """ChatServer.py
 
-The Lair: Server class for a threaded chat application.
+The Lair: Threaded server class for a chat application.
 """
 
 import datetime
@@ -34,24 +34,36 @@ def timestamp() -> str:
     return f'[{hour}:{minute}:{second}]'
 
 
-class ChatServer():
+def broadcast_to_client(message: str, sock: socket) -> None:
+    """Broadcast a message to a single client."""
+    # Create the encrypted message
+    encrypted_message = aes_cipher.encrypt(message)
+    if encrypted_message is None:
+        return
+
+    # Send message
+    try:
+        sock.sendall(encrypted_message)
+    except OSError as e:
+        logging.warning(f'Broadcast error: {e}')
+
+
+class ChatServer:
     """A simple chat room server."""
 
     def __init__(self, host: str, port: int) -> None:
         """Initialize the chat server."""
         self.exit_flag = False
-        self.users: Dict[socket, str] = {}
-        self.addresses: Dict[socket, Tuple[str, int]] = {}
+        self.connections: Dict[str, Dict] = {}
         self.buf_size = 4096
         self.sel = selectors.DefaultSelector()
         max_queue = 5
-        address = (host, port)
 
         # Create the server socket
         try:
             self.server = socket(AF_INET, SOCK_STREAM)
             self.server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            self.server.bind(address)
+            self.server.bind((host, port))
             self.server.listen(max_queue)
         except OSError as e:
             logging.critical(f'Error: {e}')
@@ -119,10 +131,9 @@ class ChatServer():
 
     def who(self) -> None:
         """Print a list of all connected clients."""
-        print('{:*^60}'.format(' The lair dwellers! '))
-        for user, address in zip(
-                self.users.values(), self.addresses.values()):
-            print(f'{user} at {address}')
+        print(f'{" The lair dwellers! ":*^60}')
+        for username, info in self.connections.items():
+            print(f'{username} @ {info["address"]}')
 
     def spawn_client(self, key: selectors.SelectorKey, mask) -> None:
         """Spawn a new client thread."""
@@ -135,36 +146,38 @@ class ChatServer():
         logging.info(f'{address} has connected')
 
         # Say hello
-        msg = 'You have entered the lair!\nEnter your name!'
-        self.broadcast_to_client(msg, sock)
-        self.addresses[sock] = address
+        message = 'You have entered the lair!\nEnter your name!'
+        broadcast_to_client(message, sock)
 
         # Start the new thread
         logging.info(f'Starting a client thread for {address}')
-        threading.Thread(target=self.handle_client, args=(sock,)).start()
+        threading.Thread(target=self.handle_client, args=(sock, address,)).start()
         logging.info(f'Client thread for {address} started')
 
-    def handle_client(self, sock: socket) -> None:
+    def handle_client(self, sock: socket, address: Tuple[str, int]) -> None:
         """Handles a single client connection."""
         # Get a unique username from the client
-        user = self.get_user(sock)
-        if user is not '':
-            self.users[sock] = user
+        username = self.prompt_username(sock)
+        if username is not '':
+            self.connections[username] = {}
+            self.connections[username]['socket'] = sock
+            self.connections[username]['address'] = address
         else:
             return
 
+        logging.info(f'{address} logged in as {username}')
+
         # Welcome the new client to the lair
-        msg = f'Welcome to the Lair {user}! Type {{help}} for commands.'
-        self.broadcast_to_client(msg, sock)
+        message = f'Hello {username}!  Type {{help}} for commands.'
+        broadcast_to_client(message, sock)
 
         # Inform other clients that a new one has connected
-        msg = f'{user} has entered the lair!'
-        self.broadcast_to_all(msg, sock)
+        self.broadcast_to_all(f'{username} has entered the lair!', username)
 
         # Start sending/receiving messages with client thread
-        self.client_thread_loop(sock, user)
+        self.client_thread_loop(username)
 
-    def get_user(self, sock: socket) -> str:
+    def prompt_username(self, sock: socket) -> str:
         """Get a unique username from the client."""
         while True:
             try:
@@ -176,120 +189,86 @@ class ChatServer():
             # Decrypt and decode data
             decrypted = aes_cipher.decrypt(data)
             if decrypted is None:
-                self.remove_client(sock, '')
                 return ''
-            user = decrypted.decode('utf-8', 'ignore')
+            username = decrypted.decode('utf-8', 'ignore')
 
             # Verify username
-            if user in self.users.values():
-                msg = f'{user} is already taken, choose another name.'
-                self.broadcast_to_client(msg, sock)
-            elif not user.isalnum() or len(user) > 8:
-                msg = 'Your name must be alphanumeric only, e.g. The3vil1\n'
-                msg = msg + 'and no longer than 8 characters.'
-                self.broadcast_to_client(msg, sock)
+            if username in self.connections.keys():
+                message = f'{username} is already taken, choose another name.'
+                broadcast_to_client(message, sock)
+            elif not username.isalnum() or len(username) > 8:
+                message = 'Your name must be alphanumeric only\n'
+                message = message + 'and no longer than 8 characters.\n'
+                message = message + 'e.g, The3vil1'
+                broadcast_to_client(message, sock)
             else:
-                logging.info(f'{self.addresses[sock]} logged in as {user}')
-                return user
+                return username
 
     def broadcast_to_all(self,
                          message: str,
-                         omit_client: Union[socket, None] = None) -> None:
+                         omit_username: Union[str, None] = None) -> None:
         """Broadcast a message to clients."""
         # Create the encrypted message
         encrypted_message = aes_cipher.encrypt(message)
-        if encrypted_message is None and omit_client:
-            self.remove_client(omit_client, self.users[omit_client])
+        if encrypted_message is None:
             return
 
         # Check message length, if too long inform client
-        if len(encrypted_message) >= self.buf_size and omit_client:
+        if len(encrypted_message) >= self.buf_size and omit_username:
+            info = self.connections[omit_username]
             encrypted_message = 'Message was too long to send.'
-            self.broadcast_to_client(encrypted_message, omit_client)
+            broadcast_to_client(encrypted_message, info['socket'])
             return
 
         # Broadcast message
-        for sock in self.addresses:
+        for username in self.connections.keys():
             # Don't send a client it's own message
-            if omit_client and sock == omit_client:
+            if omit_username and username == omit_username:
                 continue
 
             # Send message
             try:
-                sock.sendall(encrypted_message)
+                self.connections[username]['socket'].sendall(encrypted_message)
             except OSError as e:
                 logging.warning(f'Broadcast error: {e}')
-                message = f'{self.users[sock]}'
-                self.remove_client(sock, message)
+                self.remove_client(username)
 
-    def broadcast_to_client(self, message: str, sock: socket) -> None:
-        """Broadcast a message to a single client."""
-        # Create the encrypted message
-        encrypted_message = aes_cipher.encrypt(message)
-        if encrypted_message is None:
-            self.remove_client(sock, self.users[sock])
-            return
-
-        # Send message
-        try:
-            sock.sendall(encrypted_message)
-        except OSError as e:
-            logging.warning(f'Broadcast error: {e}')
-            message = f'{self.users[sock]}'
-            self.remove_client(sock, message)
-
-    def client_thread_loop(self, sock: socket, user: str):
+    def client_thread_loop(self, username: str) -> None:
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
-                data = sock.recv(self.buf_size)
+                data = self.connections[username]['socket'].recv(
+                    self.buf_size)
             except OSError as e:
                 logging.warning(f'Receive error: {e}')
-                self.remove_client(sock, user)
+                self.remove_client(username)
                 return
 
             # Decrypt and decode the message
             decrypted_data = aes_cipher.decrypt(data)
             if decrypted_data is None:
-                self.remove_client(sock, user)
                 return
             message = decrypted_data.decode('utf-8', 'ignore')
 
             if message == '{quit}':
-                self.remove_client(sock, user)
+                self.remove_client(username)
                 break
             elif message == '{who}':
-                self.tell_who(sock)
+                self.tell_who(username)
             else:
-                message = f'{timestamp()}\n{user}: {message}'
-                self.broadcast_to_all(message, sock)
+                message = f'{timestamp()}\n{username}: {message}'
+                self.broadcast_to_all(message, username)
 
-    def remove_client(self, sock: socket, user: str) -> None:
+    def remove_client(self, username) -> None:
         """Remove a client connection."""
-        logging.info(f'{self.addresses[sock]} has disconnected.')
+        info = self.connections[username]
+        logging.info(f'{username} @ {info["address"]} has disconnected.')
+        self.broadcast_to_all(f'{username} has left the lair.', username)
+        del self.connections[username]
 
-        # Remove client from dictionaries
-        if sock in self.addresses.copy():
-            del self.addresses[sock]
-
-        if sock in self.users.copy():
-            del self.users[sock]
-
-        # Broadcast departure
-        if user is not '':
-            msg = f'{user} has left the lair.'
-            self.broadcast_to_all(msg, sock)
-
-        # Make sure client is disconnected
-        try:
-            sock.close()
-        except OSError as e:
-            logging.warning(f'remove_client: {e}')
-
-    def tell_who(self, sock: socket) -> None:
-        """Send a list of connected users to a client."""
-        for user, address in zip(
-                self.users.values(), self.addresses.values()):
-            msg = f'{user} at {address[0]}\n'
-            self.broadcast_to_client(msg, sock)
+    def tell_who(self, username) -> None:
+        """Send a list of connected username's to a client."""
+        sock = self.connections[username]['socket']
+        for username, info in self.connections.items():
+            broadcast_to_client(f'{username} @ {info["address"][0]}', sock)
             time.sleep(0.1)
