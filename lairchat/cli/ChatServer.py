@@ -57,14 +57,13 @@ class ChatServer:
         self.connections: Dict[str, Dict] = {}
         self.buf_size = 4096
         self.sel = selectors.DefaultSelector()
-        max_queue = 5
 
         # Create the server socket
         try:
             self.server = socket(AF_INET, SOCK_STREAM)
             self.server.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             self.server.bind((host, port))
-            self.server.listen(max_queue)
+            self.server.listen(5)
         except OSError as e:
             logging.critical(f'Error: {e}')
             sys.exit(1)
@@ -72,7 +71,7 @@ class ChatServer:
         # Register some select events
         self.sel.register(self.server,
                           selectors.EVENT_READ,
-                          self.spawn_client)
+                          self.spawn_connection)
         self.sel.register(sys.stdin, selectors.EVENT_READ, self.admin_input)
 
     def run(self) -> None:
@@ -135,7 +134,7 @@ class ChatServer:
         for username, info in self.connections.items():
             print(f'{username} @ {info["address"]}')
 
-    def spawn_client(self, key: selectors.SelectorKey, mask) -> None:
+    def spawn_connection(self, key: selectors.SelectorKey, mask) -> None:
         """Spawn a new client thread."""
         try:
             sock, address = self.server.accept()
@@ -151,10 +150,12 @@ class ChatServer:
 
         # Start the new thread
         logging.info(f'Starting a client thread for {address}')
-        threading.Thread(target=self.handle_client, args=(sock, address,)).start()
+        threading.Thread(
+            target=self.handle_connection, args=(sock, address,)).start()
         logging.info(f'Client thread for {address} started')
 
-    def handle_client(self, sock: socket, address: Tuple[str, int]) -> None:
+    def handle_connection(
+            self, sock: socket, address: Tuple[str, int]) -> None:
         """Handles a single client connection."""
         # Get a unique username from the client
         username = self.prompt_username(sock)
@@ -175,7 +176,7 @@ class ChatServer:
         self.broadcast_to_all(f'{username} has entered the lair!', username)
 
         # Start sending/receiving messages with client thread
-        self.client_thread_loop(username)
+        self.connection_thread_loop(username)
 
     def prompt_username(self, sock: socket) -> str:
         """Get a unique username from the client."""
@@ -214,7 +215,7 @@ class ChatServer:
             return
 
         # Check message length, if too long inform client
-        if len(encrypted_message) >= self.buf_size and omit_username:
+        if len(encrypted_message) >= (self.buf_size / 4) and omit_username:
             info = self.connections[omit_username]
             encrypted_message = 'Message was too long to send.'
             broadcast_to_client(encrypted_message, info['socket'])
@@ -228,12 +229,13 @@ class ChatServer:
 
             # Send message
             try:
-                self.connections[username]['socket'].sendall(encrypted_message)
+                self.connections[username]['socket'].sendall(
+                    encrypted_message)
             except OSError as e:
                 logging.warning(f'Broadcast error: {e}')
                 self.remove_client(username)
 
-    def client_thread_loop(self, username: str) -> None:
+    def connection_thread_loop(self, username: str) -> None:
         """Send/Receive loop for client thread."""
         while not self.exit_flag:
             try:
@@ -259,14 +261,14 @@ class ChatServer:
                 message = f'{timestamp()}\n{username}: {message}'
                 self.broadcast_to_all(message, username)
 
-    def remove_client(self, username) -> None:
+    def remove_client(self, username: str) -> None:
         """Remove a client connection."""
         info = self.connections[username]
         logging.info(f'{username} @ {info["address"]} has disconnected.')
         self.broadcast_to_all(f'{username} has left the lair.', username)
         del self.connections[username]
 
-    def tell_who(self, username) -> None:
+    def tell_who(self, username: str) -> None:
         """Send a list of connected username's to a client."""
         sock = self.connections[username]['socket']
         for username, info in self.connections.items():
