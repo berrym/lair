@@ -73,7 +73,7 @@ class ChatClient:
         """Read input from the user."""
         message = input('')
         if message == '{help}':
-            print('{:*^40}'.format(' Available Commands '))
+            print(f'{" Available Commands ":*^40}')
             print('{help}:\tThis help message')
             print('{who}:\tA list of connected users')
             print('{quit}:\tExit this client session')
