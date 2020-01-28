@@ -37,5 +37,5 @@ Michael Berry <trismegustis@gmail.com>
 
 ## License
 
-This project is licensed under the GNU General Purpose License version 3, or at your discretion any later version.
+This project is licensed under the GNU General Public License version 3, or at your discretion any later version.
 See the COPYING file included in the git repository.
