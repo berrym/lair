@@ -28,28 +28,28 @@ class ChatWindow(QtWidgets.QMainWindow):
 
     def initUI(self):
         """Create all gui components."""
-        exit_act = QtWidgets.QAction(QtGui.QIcon(), 'Exit', self)
-        exit_act.setShortcut('Ctrl+Q')
-        exit_act.setStatusTip('Exit application')
+        exit_act = QtWidgets.QAction(QtGui.QIcon(), "Exit", self)
+        exit_act.setShortcut("Ctrl+Q")
+        exit_act.setStatusTip("Exit application")
         exit_act.triggered.connect(self.close)
 
-        conn_act = QtWidgets.QAction(QtGui.QIcon(), 'Connect', self)
-        conn_act.setShortcut('F2')
-        conn_act.setStatusTip('Connect To a Lair')
+        conn_act = QtWidgets.QAction(QtGui.QIcon(), "Connect", self)
+        conn_act.setShortcut("F2")
+        conn_act.setStatusTip("Connect To a Lair")
         conn_act.triggered.connect(self.connect)
 
-        about_act = QtWidgets.QAction(QtGui.QIcon(), 'About The Lair', self)
+        about_act = QtWidgets.QAction(QtGui.QIcon(), "About The Lair", self)
         about_act.triggered.connect(self.aboutTheLair)
 
-        about_Qt_act = QtWidgets.QAction(QtGui.QIcon(), 'About Qt', self)
+        about_Qt_act = QtWidgets.QAction(QtGui.QIcon(), "About Qt", self)
         about_Qt_act.triggered.connect(self.aboutQt)
 
         menu_bar = self.menuBar()
-        file_menu = menu_bar.addMenu('&File')
+        file_menu = menu_bar.addMenu("&File")
         file_menu.addAction(conn_act)
         file_menu.addAction(exit_act)
 
-        help_menu = menu_bar.addMenu('&Help')
+        help_menu = menu_bar.addMenu("&Help")
         help_menu.addAction(about_act)
         help_menu.addAction(about_Qt_act)
 
@@ -77,7 +77,7 @@ class ChatWindow(QtWidgets.QMainWindow):
 
         self.setCentralWidget(splitter2)
 
-        self.setWindowTitle('The Lair')
+        self.setWindowTitle("The Lair")
         self.resize(500, 500)
         self.chat_text_field.setFocus()
 
@@ -103,16 +103,16 @@ class ChatWindow(QtWidgets.QMainWindow):
         global announce_exit
         text = self.chat_text_field.text()
 
-        if text == '{help}':
-            self.chat_text_field.setText('')
+        if text == "{help}":
+            self.chat_text_field.setText("")
             return self.help()
-        elif text == '{quit}':
+        elif text == "{quit}":
             self.ct.communicator.close_app.emit()
 
         # Encrypt the text
         data = aes_cipher.encrypt(text)
         if data is None:
-            critical_error(self, 'unable to encrypt data.')
+            critical_error(self, "unable to encrypt data.")
             self.quit()
 
         # Send the text
@@ -124,18 +124,18 @@ class ChatWindow(QtWidgets.QMainWindow):
 
         # Decrypt the text
         decrypted = aes_cipher.decrypt(data)
-        msg = decrypted.decode('utf-8', 'ignore')
+        msg = decrypted.decode("utf-8", "ignore")
 
         # Update UI
         self.chat_view.append(msg)
-        self.chat_text_field.setText('')
+        self.chat_text_field.setText("")
 
     def help(self):
         """Print a list of available commands."""
-        self.chat_view.append('Available Commands:\n')
-        self.chat_view.append('\t{help}:\tThis help menu')
-        self.chat_view.append('\t{quit}:\tExit program')
-        self.chat_view.append('\t{who}\tList of user names in the lair.')
+        self.chat_view.append("Available Commands:\n")
+        self.chat_view.append("\t{help}:\tThis help menu")
+        self.chat_view.append("\t{quit}:\tExit program")
+        self.chat_view.append("\t{who}\tList of user names in the lair.")
 
     def aboutTheLair(self):
         """Display an about message box with Program/Author information."""
@@ -145,8 +145,8 @@ class ChatWindow(QtWidgets.QMainWindow):
         GPLv3</a>
         <br><br><b>Copyright (C) Michael Berry 2019</b>
         """
-        QtWidgets.QMessageBox.about(self, 'About The Lair', text)
+        QtWidgets.QMessageBox.about(self, "About The Lair", text)
 
     def aboutQt(self):
         """Display information about Qt."""
-        QtWidgets.QMessageBox.aboutQt(self, 'About Qt')
+        QtWidgets.QMessageBox.aboutQt(self, "About Qt")

@@ -24,7 +24,7 @@ class ChatClient:
             self.server = socket(AF_INET, SOCK_STREAM)
             self.server.connect((host, port))
         except OSError as e:
-            print(f'Error: {e}')
+            print(f"Error: {e}")
             sys.exit(1)
 
         # Register some select events
@@ -55,28 +55,28 @@ class ChatClient:
         try:
             data = self.server.recv(self.buf_size)
         except OSError as e:
-            print(f'Error: {e}')
+            print(f"Error: {e}")
             return
 
         # Print the message
         decrypted_data = aes_cipher.decrypt(data)
         if decrypted_data is None:
             return
-        message = decrypted_data.decode('utf-8', 'ignore')
+        message = decrypted_data.decode("utf-8", "ignore")
         print(message)
 
         # Check if the server closed
-        if message == 'The lair is closed.':
+        if message == "The lair is closed.":
             self.exit_flag = True
 
     def user_input(self, key: selectors.SelectorKey, mask) -> None:
         """Read input from the user."""
-        message = input('')
-        if message == '{help}':
+        message = input("")
+        if message == "{help}":
             print(f'{" Available Commands ":*^40}')
-            print('{help}:\tThis help message')
-            print('{who}:\tA list of connected users')
-            print('{quit}:\tExit this client session')
+            print("{help}:\tThis help message")
+            print("{who}:\tA list of connected users")
+            print("{quit}:\tExit this client session")
             return
 
         # Encrypt the message
@@ -88,13 +88,13 @@ class ChatClient:
         try:
             self.server.sendall(encrypted_message)
         except OSError as e:
-            print(f'Error: {e}')
+            print(f"Error: {e}")
             sys.exit(1)
 
         # Decrypt the message
         decrypted_message = aes_cipher.decrypt(encrypted_message)
 
         # Decode the message and check if the user wants to quit
-        if decrypted_message.decode('utf-8', 'ignore') == '{quit}':
+        if decrypted_message.decode("utf-8", "ignore") == "{quit}":
             self.exit_flag = True
             return

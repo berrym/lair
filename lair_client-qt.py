@@ -37,5 +37,5 @@ def main():
 
 
 # __main__? Program entry point
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

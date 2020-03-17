@@ -39,22 +39,22 @@ class ClientThread(QtCore.QThread):
         try:
             data = self.parent.sock.recv(buf_size)
         except OSError as e:
-            critical_error(self.parent, f'recv: {e}')
+            critical_error(self.parent, f"recv: {e}")
             self.quit()
 
         # Decrypt and decode the data
         decrypted = aes_cipher.decrypt(data)
         if decrypted is None:
-            critical_error(self.parent, 'unable to decrypt message')
+            critical_error(self.parent, "unable to decrypt message")
             self.quit()
 
-        msg = decrypted.decode('utf-8', 'ignore')
+        msg = decrypted.decode("utf-8", "ignore")
 
         # Add received text to chat field
-        self.parent.chat_view.append(format_text(color='blue', text=msg))
+        self.parent.chat_view.append(format_text(color="blue", text=msg))
 
         # The server closed, do NOT set ANNOUNCE_EXIT
-        if msg == 'The lair is closed.':
+        if msg == "The lair is closed.":
             self.quit()
 
     def run(self):

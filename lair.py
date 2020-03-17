@@ -32,7 +32,7 @@ from lairchat.cli.ChatServer import ChatServer
 
 # Program name
 prog = sys.argv[0]
-prog.replace('./', '')
+prog.replace("./", "")
 
 
 def catch_keyboard_interrupt(func: Callable) -> Any:
@@ -54,73 +54,73 @@ def main() -> None:
     """Main Function."""
     # Create a command line argument parser
     parser = argparse.ArgumentParser(
-        description='The Lair Chat App',
-        epilog='Copyright (C) 2019 Michael Berry')
+        description="The Lair Chat App", epilog="Copyright (C) 2019 Michael Berry"
+    )
 
     # Lair options
-    lair_options = parser.add_argument_group('Lair Arguments')
+    lair_options = parser.add_argument_group("Lair Arguments")
 
     # Required option, either server or client
     lair_options.add_argument(
-        'session_type',
+        "session_type",
         type=str,
-        help='specifies whether to run a "server" or "client" session')
+        help='specifies whether to run a "server" or "client" session',
+    )
 
     # Server options
-    server_options = parser.add_argument_group('Server Arguments')
+    server_options = parser.add_argument_group("Server Arguments")
 
     server_options.add_argument(
-        '--address',
+        "--address",
         type=str,
-        default='127.0.0.1',
-        help='specifies the address the server will bind to')
+        default="127.0.0.1",
+        help="specifies the address the server will bind to",
+    )
 
     server_options.add_argument(
-        '--port',
+        "--port",
         type=int,
         default=8888,
-        help='specifies which port the server will bind to')
+        help="specifies which port the server will bind to",
+    )
 
     # Client options
-    client_options = parser.add_argument_group('Client Arguments')
+    client_options = parser.add_argument_group("Client Arguments")
 
     client_options.add_argument(
-        '--gui',
-        default=False,
-        action='store_true',
-        help='run the Qt gui client'
+        "--gui", default=False, action="store_true", help="run the Qt gui client"
     )
 
     client_options.add_argument(
-        '--sa',
-        default='127.0.0.1',
+        "--sa",
+        default="127.0.0.1",
         type=str,
-        help='specifies the address of the server'
+        help="specifies the address of the server",
     )
 
     client_options.add_argument(
-        '--sp',
+        "--sp",
         default=8888,
         type=int,
-        help='specifies which port on the server to connect to'
+        help="specifies which port on the server to connect to",
     )
 
     # Parse the command line
     args = parser.parse_args()
 
-    if args.session_type == 'server':
+    if args.session_type == "server":
         ChatServer(args.address, args.port).run()
-    elif args.session_type == 'client':
+    elif args.session_type == "client":
         if not args.gui:
             ChatClient(args.sa, args.sp).run()
         else:
             # exec gui client
-            subprocess.Popen(os.path.join(sys.path[0], 'lair_client-qt.py'))
+            subprocess.Popen(os.path.join(sys.path[0], "lair_client-qt.py"))
             return
     else:
-        print(f'{prog}: error: session_type must be either server or client')
+        print(f"{prog}: error: session_type must be either server or client")
 
 
 # __main__? Program entry point
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
