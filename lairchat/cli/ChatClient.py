@@ -59,8 +59,7 @@ class ChatClient:
             return
 
         # Print the message
-        decrypted_data = aes_cipher.decrypt(data)
-        if decrypted_data is None:
+        if (decrypted_data := aes_cipher.decrypt(data)) is None:
             return
         message = decrypted_data.decode("utf-8", "ignore")
         print(message)
@@ -80,8 +79,7 @@ class ChatClient:
             return
 
         # Encrypt the message
-        encrypted_message = aes_cipher.encrypt(message)
-        if encrypted_message is None:
+        if (encrypted_message := aes_cipher.encrypt(message)) is None:
             return
 
         # Send the message

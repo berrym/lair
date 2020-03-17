@@ -10,7 +10,7 @@ A small chat application written in Python 3
 
 * Clone the git repository from https://github.com/berrym/lair.git
 
-* Install a recent version of Python, tested with 3.6+
+* Install a recent version of Python, needs 3.8+
 
 * A requirements.txt is provided in the repository so required packages can be installed using pip.
     * pip install --user requirements.txt
@@ -32,6 +32,8 @@ Michael Berry <trismegustis@gmail.com>
 
 ## Version History
 
+* 0.1.1
+    * Require Python 3.8+
 * 0.1.0
     * Initial Release
 

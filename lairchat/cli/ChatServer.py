@@ -37,8 +37,7 @@ def timestamp() -> str:
 def broadcast_to_client(message: str, sock: socket) -> None:
     """Broadcast a message to a single client."""
     # Create the encrypted message
-    encrypted_message = aes_cipher.encrypt(message)
-    if encrypted_message is None:
+    if (encrypted_message := aes_cipher.encrypt(message)) is None:
         return
 
     # Send message
@@ -154,8 +153,7 @@ class ChatServer:
     def handle_connection(self, sock: socket, address: Tuple[str, int]) -> None:
         """Handles a single client connection."""
         # Get a unique username from the client
-        username = self.prompt_username(sock)
-        if username is not "":
+        if (username := self.prompt_username(sock)) != "":
             self.connections[username] = {}
             self.connections[username]["socket"] = sock
             self.connections[username]["address"] = address
@@ -184,8 +182,7 @@ class ChatServer:
                 return ""
 
             # Decrypt and decode data
-            decrypted = aes_cipher.decrypt(data)
-            if decrypted is None:
+            if (decrypted := aes_cipher.decrypt(data)) is None:
                 return ""
             username = decrypted.decode("utf-8", "ignore")
 
@@ -206,8 +203,7 @@ class ChatServer:
     ) -> None:
         """Broadcast a message to clients."""
         # Create the encrypted message
-        encrypted_message = aes_cipher.encrypt(message)
-        if encrypted_message is None:
+        if (encrypted_message := aes_cipher.encrypt(message)) is None:
             return
 
         # Check message length, if too long inform client
@@ -241,8 +237,7 @@ class ChatServer:
                 return
 
             # Decrypt and decode the message
-            decrypted_data = aes_cipher.decrypt(data)
-            if decrypted_data is None:
+            if (decrypted_data := aes_cipher.decrypt(data)) is None:
                 return
             message = decrypted_data.decode("utf-8", "ignore")
 

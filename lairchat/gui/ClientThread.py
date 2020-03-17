@@ -43,8 +43,7 @@ class ClientThread(QtCore.QThread):
             self.quit()
 
         # Decrypt and decode the data
-        decrypted = aes_cipher.decrypt(data)
-        if decrypted is None:
+        if (decrypted := aes_cipher.decrypt(data)) is None:
             critical_error(self.parent, "unable to decrypt message")
             self.quit()
 

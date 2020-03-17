@@ -110,8 +110,7 @@ class ChatWindow(QtWidgets.QMainWindow):
             self.ct.communicator.close_app.emit()
 
         # Encrypt the text
-        data = aes_cipher.encrypt(text)
-        if data is None:
+        if (data := aes_cipher.encrypt(text)) is None:
             critical_error(self, "unable to encrypt data.")
             self.quit()
 
