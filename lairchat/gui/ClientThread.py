@@ -32,7 +32,7 @@ class ClientThread(QtCore.QThread):
         """Exit the program."""
         self.parent.quit()
 
-    def recveive(self):
+    def receive(self):
         """Read data from server."""
         buf_size = 4096
 
@@ -66,4 +66,4 @@ class ClientThread(QtCore.QThread):
 
         # Receive loop
         while True:
-            self.recveive()
+            self.receive()
