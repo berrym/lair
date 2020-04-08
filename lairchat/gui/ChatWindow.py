@@ -41,8 +41,8 @@ class ChatWindow(QtWidgets.QMainWindow):
         about_act = QtWidgets.QAction(QtGui.QIcon(), "About The Lair", self)
         about_act.triggered.connect(self.aboutTheLair)
 
-        about_Qt_act = QtWidgets.QAction(QtGui.QIcon(), "About Qt", self)
-        about_Qt_act.triggered.connect(self.aboutQt)
+        about_qt_act = QtWidgets.QAction(QtGui.QIcon(), "About Qt", self)
+        about_qt_act.triggered.connect(self.aboutQt)
 
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("&File")
@@ -51,7 +51,7 @@ class ChatWindow(QtWidgets.QMainWindow):
 
         help_menu = menu_bar.addMenu("&Help")
         help_menu.addAction(about_act)
-        help_menu.addAction(about_Qt_act)
+        help_menu.addAction(about_qt_act)
 
         self.chat_text_field.resize(480, 100)
         self.chat_text_field.move(10, 350)
@@ -85,10 +85,6 @@ class ChatWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         """Quit app when the window is closed."""
-        self.quit()
-
-    def quit(self):
-        """Exit the program."""
         exit(0)
 
     def connect(self):
@@ -112,14 +108,14 @@ class ChatWindow(QtWidgets.QMainWindow):
         # Encrypt the text
         if (data := aes_cipher.encrypt(text)) is None:
             critical_error(self, "unable to encrypt data.")
-            self.quit()
+            exit(0)
 
         # Send the text
         try:
             self.sock.sendall(data)
         except OSError as e:
             critical_error(self.window, e)
-            self.quit()
+            exit(0)
 
         # Decrypt the text
         decrypted = aes_cipher.decrypt(data)
